@@ -956,6 +956,16 @@ function renderBarChart(id, data) {
 
   return result;
 }
+    window.showPage = function(pageId) {
+  document.querySelectorAll(".page-section").forEach(section => {
+    section.classList.add("hidden");
+  });
+
+  const page = document.getElementById(pageId);
+  if (page) {
+    page.classList.remove("hidden");
+  }
+};
   </script>
   </body>
   </html>
