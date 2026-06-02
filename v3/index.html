@@ -201,6 +201,10 @@
   <div id="riskChart"></div>
   <h4>Finding by Status</h4>
   <div id="statusChart"></div>
+  <h4>Management Action Plan Status</h4>
+  <div id="mapStatusChart"></div>
+  <h4>Top Owner by Open Action</h4>
+  <div id="ownerChart"></div>
 </div>
     
     <div class="card">
@@ -302,7 +306,51 @@
           <input id="findingId" placeholder="Auto / Manual เช่น FA-SPT-001" />
         </div>
       </div>
-
+<!-- Management Action Plan -->
+<div class="grid">
+  <div>
+    <label>Owner Response</label>
+    <textarea 
+      id="ownerResponse"
+      placeholder="คำชี้แจง / แนวทางแก้ไขจากหน่วยงาน">
+    </textarea>
+  </div>
+  <div>
+    <label>Revised Due Date</label>
+    <input 
+      id="revisedDueDate" 
+      type="date" />
+  </div>
+  <div>
+    <label>Progress %</label>
+    <input 
+      id="progressPercent"
+      type="number"
+      min="0"
+      max="100"
+      value="0" />
+  </div>
+  <div>
+    <label>MAP Status</label>
+    <select id="mapStatus">
+      <option value="Not Started">
+        Not Started
+      </option>
+      <option value="In Progress">
+        In Progress
+      </option>
+      <option value="Implemented">
+        Implemented
+      </option>
+      <option value="Verified">
+        Verified
+      </option>
+      <option value="Closed">
+        Closed
+      </option>
+    </select>
+  </div>
+  </div>
       <br />
       <button onclick="saveFinding()">บันทึก Finding</button>
       <button onclick="resetForm()" class="secondary">ล้างฟอร์ม</button>
@@ -356,6 +404,8 @@
             <th>Owner</th>
             <th>Due Date</th>
             <th>Aging</th>
+            <th>MAP Status</th>
+            <th>Progress</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -470,6 +520,10 @@
         dueDate: getValue("dueDate"),
         status: getValue("status"),
         evidenceLink: getValue("evidenceLink"),
+        ownerResponse: getValue("ownerResponse"),
+        revisedDueDate: getValue("revisedDueDate"),
+        progressPercent: Number(getValue("progressPercent")),
+        mapStatus: getValue("mapStatus"),
         updatedAt: serverTimestamp()
       };
 
@@ -510,6 +564,10 @@
       setValue("dueDate", f.dueDate);
       setValue("status", f.status);
       setValue("evidenceLink", f.evidenceLink);
+      setValue("ownerResponse", f.ownerResponse);
+      setValue("revisedDueDate", f.revisedDueDate);
+      setValue("progressPercent", f.progressPercent);
+      setValue("mapStatus", f.mapStatus);
       window.scrollTo(0, 0);
     };
 
@@ -545,6 +603,8 @@
             <td>${f.owner || ""}</td>
             <td>${f.dueDate || ""}</td>
             <td>${aging}</td>
+            <td>${f.mapStatus || "-"}</td>
+            <td>${f.progressPercent || 0}%</td>
             <td>
               <button onclick="editFinding('${f.id}')">แก้ไข</button>
               <button class="danger" onclick="deleteFinding('${f.id}')">ลบ</button>
@@ -613,8 +673,9 @@
 
     window.resetForm = function () {
       [
-        "docId", "findingId", "auditArea", "condition", "criteria",
-        "cause", "effectRisk", "recommendation", "owner", "dueDate", "evidenceLink"
+      "docId", "findingId", "auditArea", "condition", "criteria",
+      "cause", "effectRisk", "recommendation", "owner", "dueDate", "evidenceLink",
+      "ownerResponse", "revisedDueDate", "progressPercent"
       ].forEach(id => setValue(id, ""));
 
       setValue("branch", "SPR");
@@ -622,6 +683,8 @@
       setValue("impact", "3");
       setValue("likelihood", "3");
       setValue("status", "Open");
+      setValue("progressPercent", "0");
+      setValue("mapStatus", "Not Started");
     };
 
     function generateFindingId() {
@@ -706,7 +769,10 @@ document.getElementById("overdueHighRisk").innerText = overdueHighRisk;
 document.getElementById("totalBranch").innerText = branches.length;
 renderBarChart("branchChart",countBy("branch"));
 renderBarChart("riskChart",countBy("riskLevel"));
-renderBarChart("statusChart",countBy("status"));}
+renderBarChart("statusChart",countBy("status"));
+renderBarChart("mapStatusChart",countBy("mapStatus"));
+renderBarChart("ownerChart",countOpenByOwner());}
+    
 function countBy(field) {
  const result = {};
  findings.forEach(f => {
@@ -734,6 +800,17 @@ function renderBarChart(id, data) {
  </div>
  <div>${value}</div>
  </div>`;});box.innerHTML = html;}
+    function countOpenByOwner() {
+  const result = {};
+  findings.forEach(f => {
+    if (f.status !== "Closed") {
+      const key = f.owner || "ไม่ระบุ Owner";
+      result[key] = (result[key] || 0) + 1;
+    }
+  });
+
+  return result;
+}
   </script>
   </body>
   </html>
