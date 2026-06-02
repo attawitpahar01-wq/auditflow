@@ -107,10 +107,38 @@
       font-weight: bold;
     }
 
-    .hidden {
-      display: none;
-    }
-  </style>
+   .hidden {
+ display: none;
+}
+/* Risk Heatmap */
+.heatmap {
+  display: grid;
+  grid-template-columns: 100px repeat(5, 1fr);
+  gap: 6px;
+  margin-top: 15px;
+}
+.heatmap-cell {
+  padding: 18px;
+  text-align: center;
+  border-radius: 8px;
+  font-weight: bold;
+  color: white;
+}
+.heatmap-label {
+  padding: 18px;
+  text-align: center;
+  font-weight: bold;
+}
+.hm-low {
+  background: #16a34a;
+}
+.hm-medium {
+  background: #d97706;
+}
+.hm-high {
+  background: #dc2626;
+}
+</style>
 </head>
 
 <body>
@@ -178,7 +206,27 @@
             <option value="Low">Low</option>
           </select>
         </div>
+<div>
+  <label>Impact / ผลกระทบ (1-5)</label>
+  <select id="impact">
+    <option value="1">1 - ต่ำมาก</option>
+    <option value="2">2 - ต่ำ</option>
+    <option value="3">3 - ปานกลาง</option>
+    <option value="4">4 - สูง</option>
+    <option value="5">5 - สูงมาก</option>
+  </select>
+</div>
 
+<div>
+  <label>Likelihood / โอกาสเกิด (1-5)</label>
+  <select id="likelihood">
+    <option value="1">1 - โอกาสเกิดต่ำมาก</option>
+    <option value="2">2 - โอกาสเกิดต่ำ</option>
+    <option value="3">3 - ปานกลาง</option>
+    <option value="4">4 - โอกาสเกิดสูง</option>
+    <option value="5">5 - โอกาสเกิดสูงมาก</option>
+  </select>
+</div>
         <div>
           <label>Status</label>
           <select id="status">
@@ -381,6 +429,11 @@
         effectRisk: getValue("effectRisk"),
         recommendation: getValue("recommendation"),
         riskLevel: getValue("riskLevel"),
+        impact: Number(getValue("impact")),
+        likelihood: Number(getValue("likelihood")),
+        riskScore:
+          Number(getValue("impact")) *
+          Number(getValue("likelihood")),
         owner: getValue("owner"),
         dueDate: getValue("dueDate"),
         status: getValue("status"),
@@ -419,6 +472,8 @@
       setValue("effectRisk", f.effectRisk);
       setValue("recommendation", f.recommendation);
       setValue("riskLevel", f.riskLevel);
+      setValue("impact", f.impact);
+      setValue("likelihood", f.likelihood);
       setValue("owner", f.owner);
       setValue("dueDate", f.dueDate);
       setValue("status", f.status);
@@ -477,6 +532,7 @@
       document.getElementById("highRisk").innerText = high;
       document.getElementById("openFinding").innerText = open;
       document.getElementById("overdueFinding").innerText = overdue;
+      renderRiskHeatmap();
     }
 
     function calculateAging(dueDate, status) {
@@ -530,6 +586,8 @@
 
       setValue("branch", "SPR");
       setValue("riskLevel", "High");
+      setValue("impact", "3");
+      setValue("likelihood", "3");
       setValue("status", "Open");
     };
 
@@ -546,6 +604,48 @@
     function setValue(id, value) {
       document.getElementById(id).value = value || "";
     }
+    function renderRiskHeatmap() {
+ const container =
+ document.getElementById("riskHeatmap");
+ if (!container) return;
+ let html = `<div class="heatmap">`;
+ html += `<div></div>`;
+ for (let i = 1; i <= 5; i++) {
+ html += `
+ <div class="heatmap-label">
+ Impact ${i}
+ </div>`;
+ }
+ for (let likelihood = 5; likelihood >= 1; likelihood--) {
+ html += `
+ <div class="heatmap-label">
+ L${likelihood}
+ </div>`;
+ for (let impact = 1; impact <= 5; impact++) {
+ const score = impact * likelihood;
+ const count =
+ findings.filter(f =>
+ Number(f.impact) === impact &&
+ Number(f.likelihood) === likelihood
+ ).length;
+ let cls = "hm-low";
+ if (score >= 13) {
+ cls = "hm-high";
+ }
+ else if (score >= 6) {
+ cls = "hm-medium";
+ }
+ html += `
+ <div class="heatmap-cell ${cls}">
+ ${count}
+ <br>
+ Score ${score}
+ </div>`;
+ }
+ }
+ html += "</div>";
+ container.innerHTML = html;
+}
   </script>
-</body>
-</html>
+  </body>
+  </html>
