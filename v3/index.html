@@ -48,11 +48,7 @@
       border-radius: 8px;
       box-sizing: border-box;
     }
-
-    textarea {
-      min-height: 70px;
-    }
-
+    textarea {min-height: 70px;}
     button {
       background: #2563eb;
       color: white;
@@ -60,21 +56,13 @@
       cursor: pointer;
       font-weight: bold;
     }
-
-    button.danger {
-      background: #dc2626;
-    }
-
-    button.secondary {
-      background: #64748b;
-    }
-
+    button.danger {background: #dc2626;}
+    button.secondary {background: #64748b;}
     table {
       width: 100%;
       border-collapse: collapse;
       background: white;
     }
-
     th, td {
       border-bottom: 1px solid #e5e7eb;
       padding: 10px;
@@ -82,34 +70,26 @@
       font-size: 14px;
       vertical-align: top;
     }
-
     th {
       background: #f1f5f9;
     }
-
     .risk-high {
       color: #dc2626;
       font-weight: bold;
     }
-
     .risk-medium {
       color: #d97706;
       font-weight: bold;
     }
-
     .risk-low {
       color: #16a34a;
       font-weight: bold;
     }
-
     .kpi {
       font-size: 26px;
       font-weight: bold;
     }
-
-   .hidden {
- display: none;
-}
+   .hidden {display: none;}
 /* Risk Heatmap */
 .heatmap {
   display: grid;
@@ -129,14 +109,35 @@
   text-align: center;
   font-weight: bold;
 }
-.hm-low {
-  background: #16a34a;
+.hm-low {background: #16a34a;}
+.hm-medium {background: #d97706;}
+.hm-high {background: #dc2626;}
+
+/* Executive Dashboard Bar */
+.bar-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 50px;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
 }
-.hm-medium {
-  background: #d97706;
+.bar-bg {
+  background: #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 22px;
 }
-.hm-high {
-  background: #dc2626;
+.bar-fill {
+  height: 22px;
+  background: #2563eb;
+  border-radius: 8px;
+}
+.bar-label {
+  font-weight: bold;
+}
+.bar-value {
+  text-align: right;
+  font-weight: bold;
 }
 </style>
 </head>
@@ -173,7 +174,35 @@
         <div class="kpi" id="overdueFinding">0</div>
       </div>
     </div>
-
+<div class="card">
+  <h3>Executive Dashboard</h3>
+  <div class="grid">
+    <div>
+      <h4>Completion Rate</h4>
+      <div class="kpi" id="completionRate">0%</div>
+    </div>
+    <div>
+      <h4>High Risk Open</h4>
+      <div class="kpi" id="highRiskOpen">0</div>
+    </div>
+    <div>
+      <h4>Overdue High Risk</h4>
+      <div class="kpi" id="overdueHighRisk">0</div>
+    </div>
+    <div>
+      <h4>Total Branch</h4>
+      <div class="kpi" id="totalBranch">0</div>
+    </div>
+  </div>
+  <hr>
+  <h4>Finding by Branch</h4>
+  <div id="branchChart"></div>
+  <h4>Finding by Risk</h4>
+  <div id="riskChart"></div>
+  <h4>Finding by Status</h4>
+  <div id="statusChart"></div>
+</div>
+    
     <div class="card">
       <h3>เพิ่ม / แก้ไข Audit Finding</h3>
 
@@ -536,6 +565,7 @@
       document.getElementById("openFinding").innerText = open;
       document.getElementById("overdueFinding").innerText = overdue;
       renderRiskHeatmap();
+      renderExecutiveDashboard();
     }
 
     function calculateAging(dueDate, status) {
@@ -649,6 +679,61 @@
  html += "</div>";
  container.innerHTML = html;
 }
+    // Executive Dashboard
+function renderExecutiveDashboard() {
+
+ const total = findings.length;
+
+ const closed =
+ findings.filter(f => f.status === "Closed").length;
+
+
+ const completionRate =
+ total === 0 ? 0 :
+ Math.round((closed / total) * 100);
+
+
+ const highRiskOpen =
+ findings.filter(f =>
+ f.riskLevel === "High" &&
+ f.status !== "Closed"
+ ).length;
+const overdueHighRisk = findings.filter(f => f.riskLevel === "High" && isOverdue(f.dueDate, f.status)).length;
+const branches = [...new Set(findings.map(f => f.branch))];
+document.getElementById("completionRate").innerText = completionRate + "%";
+document.getElementById("highRiskOpen").innerText = highRiskOpen;
+document.getElementById("overdueHighRisk").innerText = overdueHighRisk;
+document.getElementById("totalBranch").innerText = branches.length;
+renderBarChart("branchChart",countBy("branch"));
+renderBarChart("riskChart",countBy("riskLevel"));
+renderBarChart("statusChart",countBy("status"));}
+function countBy(field) {
+ const result = {};
+ findings.forEach(f => {
+ const key =
+ f[field] || "ไม่ระบุ";
+ result[key] = (result[key] || 0) + 1;});return result;}
+function renderBarChart(id, data) {
+ const box =
+ document.getElementById(id);
+ if (!box) return;
+ const max =
+ Math.max(...Object.values(data), 1);
+ let html = "";
+ Object.keys(data).forEach(key => {
+ const value = data[key];
+ const width =
+ (value / max) * 100;
+ html += `
+ <div class="bar-row">
+ <div>${key}</div>
+ <div class="bar-bg">
+ <div class="bar-fill"
+ style="width:${width}%">
+ </div>
+ </div>
+ <div>${value}</div>
+ </div>`;});box.innerHTML = html;}
   </script>
   </body>
   </html>
