@@ -139,6 +139,55 @@
   text-align: right;
   font-weight: bold;
 }
+/* Fix Sidebar Layout */
+
+#app.layout:not(.hidden) {
+  display: flex !important;
+  min-height: calc(100vh - 90px);
+}
+
+.layout.hidden {
+  display: none !important;
+}
+
+.sidebar {
+  width: 240px !important;
+  min-width: 240px;
+  background: #0f172a;
+  color: white;
+  padding: 20px;
+}
+
+.sidebar h2 {
+  color: white;
+  margin-bottom: 20px;
+}
+
+.sidebar button {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 12px;
+  background: #1e293b;
+  color: white;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.sidebar button:hover {
+  background: #2563eb;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  background: #f4f6f9;
+}
+
+.page-section.hidden {
+  display: none !important;
+}    
 </style>
 </head>
 
@@ -572,6 +621,7 @@ Branch Master Data
         logoutBtn.classList.remove("hidden");
         appDiv.classList.remove("hidden");
         listenFindings();
+        showPage("pageDashboard");
       } else {
         currentUser = null;
         userInfo.innerText = "ยังไม่ได้เข้าสู่ระบบ";
