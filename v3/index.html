@@ -154,9 +154,24 @@
     </div>
   </header>
 
-  <div class="container hidden" id="app">
+  <div class="layout hidden" id="app">
+
+  <aside class="sidebar">
+    <h2>AuditFlow v3</h2>
+
+    <button onclick="showPage('pageDashboard')">📊 Dashboard</button>
+    <button onclick="showPage('pageRegister')">📝 Finding Register</button>
+    <button onclick="showPage('pageForm')">➕ Add / Edit Finding</button>
+    <button onclick="showPage('pageActionPlan')">✅ Action Plan</button>
+    <button onclick="showPage('pageHeatmap')">🔥 Risk Heatmap</button>
+    <button onclick="showPage('pageEvidence')">📁 Evidence</button>
+    <button onclick="showPage('pageReport')">📄 Report</button>
+    <button onclick="showPage('pageSetting')">⚙️ Setting</button>
+  </aside>
+  <main class="main-content">
 
     <div class="grid">
+      <section id="pageDashboard" class="page-section">
       <div class="card">
         <div>Finding ทั้งหมด</div>
         <div class="kpi" id="totalFinding">0</div>
@@ -206,7 +221,8 @@
   <h4>Top Owner by Open Action</h4>
   <div id="ownerChart"></div>
 </div>
-    
+    </section>
+    <section id="pageForm" class="page-section hidden">
     <div class="card">
       <h3>เพิ่ม / แก้ไข Audit Finding</h3>
 
@@ -355,10 +371,14 @@
       <button onclick="saveFinding()">บันทึก Finding</button>
       <button onclick="resetForm()" class="secondary">ล้างฟอร์ม</button>
     </div>
+      </section>
+      <section id="pageHeatmap" class="page-section hidden">
       <div class="card">
       <h3>Risk Heatmap 5x5</h3>
       <div id="riskHeatmap"></div>
   </div>
+  </section>
+    <section id="pageFilter" class="page-section hidden">
     <div class="card">
       <h3>Dashboard Filter</h3>
       <div class="grid">
@@ -390,7 +410,8 @@
         <button onclick="exportCSV()">Export Excel / CSV</button>
       </div>
     </div>
-
+    </section>
+      <section id="pageRegister" class="page-section hidden">
     <div class="card">
       <h3>Audit Finding Register</h3>
       <table>
@@ -410,10 +431,84 @@
           </tr>
         </thead>
         <tbody id="findingTable"></tbody>
-      </table>
-    </div>
 
-  </div>
+</table>
+
+</div>
+
+
+</section>
+
+
+<!-- Action Plan Page -->
+<section id="pageActionPlan" class="page-section hidden">
+
+<div class="card">
+
+<h3>Management Action Plan</h3>
+
+<p>ติดตาม Corrective Action / Owner / Due Date</p>
+
+</div>
+
+</section>
+
+
+
+<!-- Evidence Page -->
+<section id="pageEvidence" class="page-section hidden">
+
+<div class="card">
+
+<h3>Evidence Center</h3>
+
+<p>ทะเบียนหลักฐานการตรวจสอบ Google Drive</p>
+
+</div>
+
+</section>
+
+
+
+<!-- Report Page -->
+<section id="pageReport" class="page-section hidden">
+
+<div class="card">
+
+<h3>Audit Report Center</h3>
+
+<p>
+Audit Committee Report<br>
+Excel Export<br>
+PDF Export
+</p>
+
+</div>
+
+</section>
+
+
+
+<!-- Setting Page -->
+<section id="pageSetting" class="page-section hidden">
+
+<div class="card">
+
+<h3>System Setting</h3>
+
+<p>
+User Role Management<br>
+Branch Master Data
+</p>
+
+</div>
+
+</section>
+
+
+</main>
+
+</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
