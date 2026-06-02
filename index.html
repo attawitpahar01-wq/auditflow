@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AuditFlow Cloud v2.0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="brand-mark">AF</div>
+      <h1>AuditFlow Cloud</h1>
+      <p>ระบบติดตามงานตรวจสอบภายในและ Action Plan สำหรับทีม 7 คน</p>
+      <button id="btn-google-login" class="btn google">เข้าสู่ระบบด้วย Google</button>
+      <button id="btn-demo-login" class="btn secondary">ทดลองใช้งานแบบ Demo</button>
+      <small>หมายเหตุ: ก่อนใช้งานจริงให้ใส่ Firebase Config ในไฟล์ app.js และเปิด Authentication แบบ Google</small>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="logo">Audit<span>Flow</span></div>
+      <button class="nav active" data-view="dashboard">Dashboard</button>
+      <button class="nav" data-view="kanban">Kanban Board</button>
+      <button class="nav" data-view="table">ทะเบียนงาน</button>
+      <button class="nav" data-view="evidence">Evidence</button>
+      <div class="sidebar-footer">
+        <div class="user-box">
+          <div id="current-user-name">-</div>
+          <small id="current-user-email">-</small>
+        </div>
+        <button id="btn-logout" class="btn danger small">ออกจากระบบ</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="page-title">Dashboard</h1>
+          <p>ทุกคนในทีมเห็นงานทั้งหมดได้ และสามารถเพิ่ม/แก้ไขงานร่วมกันผ่าน Firestore</p>
+        </div>
+        <button id="btn-open-modal" class="btn primary">+ สร้างงานใหม่</button>
+      </header>
+
+      <section id="view-dashboard" class="view active">
+        <div class="stats-grid">
+          <div class="stat"><span>งานทั้งหมด</span><strong id="stat-total">0</strong></div>
+          <div class="stat"><span>High/Critical</span><strong id="stat-high">0</strong></div>
+          <div class="stat"><span>เกินกำหนด</span><strong id="stat-overdue">0</strong></div>
+          <div class="stat"><span>เสร็จสิ้น</span><strong id="stat-done">0</strong></div>
+        </div>
+        <div class="panel">
+          <h2>สรุปตามสาขา</h2>
+          <div id="branch-summary" class="branch-grid"></div>
+        </div>
+      </section>
+
+      <section id="view-kanban" class="view">
+        <div class="filter-row">
+          <select id="filter-branch"></select>
+          <select id="filter-owner"></select>
+        </div>
+        <div class="kanban" id="kanban-board"></div>
+      </section>
+
+      <section id="view-table" class="view">
+        <div class="panel table-wrap">
+          <table>
+            <thead>
+              <tr><th>งาน</th><th>สาขา</th><th>ผู้รับผิดชอบ</th><th>Risk</th><th>Due Date</th><th>Status</th><th>Evidence</th><th>Action</th></tr>
+            </thead>
+            <tbody id="task-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-evidence" class="view">
+        <div class="panel">
+          <h2>Evidence Repository</h2>
+          <p>ใช้ Google Drive เป็นที่เก็บไฟล์ แล้วนำลิงก์มาใส่ในแต่ละงาน</p>
+          <div id="evidence-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="task-modal" class="modal hidden">
+    <form id="task-form" class="modal-card">
+      <div class="modal-head">
+        <h2 id="modal-title">สร้างงานใหม่</h2>
+        <button type="button" id="btn-close-modal" class="icon-btn">×</button>
+      </div>
+      <input type="hidden" id="task-id" />
+      <label>ชื่องาน<input id="task-title" required placeholder="เช่น FA-03 วิเคราะห์ความเคลื่อนไหวสินทรัพย์" /></label>
+      <label>รายละเอียด<textarea id="task-desc" rows="3" placeholder="ระบุวัตถุประสงค์ ขั้นตอนตรวจสอบ หรือประเด็นที่ต้องติดตาม"></textarea></label>
+      <div class="form-grid">
+        <label>สาขา<select id="task-branch" required></select></label>
+        <label>ผู้รับผิดชอบ<input id="task-owner" required placeholder="เช่น คุณนัท / Auditor 1" /></label>
+        <label>Risk<select id="task-risk"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
+        <label>Status<select id="task-status"><option value="planning">Planning</option><option value="fieldwork">Fieldwork</option><option value="review">Review</option><option value="done">Done</option></select></label>
+        <label>Due Date<input id="task-due" type="date" required /></label>
+        <label>ประเภทงาน<select id="task-type"><option>Working Paper</option><option>Finding</option><option>Action Plan</option><option>Follow-up</option><option>Other</option></select></label>
+      </div>
+      <div class="evidence-box">
+        <h3>Evidence / Google Drive Link</h3>
+        <label>ชื่อ Evidence<input id="evidence-name" placeholder="เช่น FA-03 Movement Analysis.xlsx" /></label>
+        <label>Google Drive URL<input id="evidence-url" type="url" placeholder="https://drive.google.com/..." /></label>
+        <small>หากมีหลายไฟล์ ให้รวมไว้ใน Google Drive Folder แล้วใส่ลิงก์ Folder ได้</small>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-delete" class="btn danger hidden">ลบงาน</button>
+        <button type="submit" class="btn primary">บันทึก</button>
+      </div>
+    </form>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
