@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>AuditFlow v3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6f9;
+      color: #1f2937;
+    }
+
+    header {
+      background: #0f172a;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 70px;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button.danger {
+      background: #dc2626;
+    }
+
+    button.secondary {
+      background: #64748b;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px;
+      text-align: left;
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f1f5f9;
+    }
+
+    .risk-high {
+      color: #dc2626;
+      font-weight: bold;
+    }
+
+    .risk-medium {
+      color: #d97706;
+      font-weight: bold;
+    }
+
+    .risk-low {
+      color: #16a34a;
+      font-weight: bold;
+    }
+
+    .kpi {
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h2>AuditFlow v3</h2>
+      <div id="userInfo">ยังไม่ได้เข้าสู่ระบบ</div>
+    </div>
+    <div>
+      <button id="loginBtn">Login with Google</button>
+      <button id="logoutBtn" class="secondary hidden">Logout</button>
+    </div>
+  </header>
+
+  <div class="container hidden" id="app">
+
+    <div class="grid">
+      <div class="card">
+        <div>Finding ทั้งหมด</div>
+        <div class="kpi" id="totalFinding">0</div>
+      </div>
+      <div class="card">
+        <div>High Risk</div>
+        <div class="kpi" id="highRisk">0</div>
+      </div>
+      <div class="card">
+        <div>Open</div>
+        <div class="kpi" id="openFinding">0</div>
+      </div>
+      <div class="card">
+        <div>Overdue</div>
+        <div class="kpi" id="overdueFinding">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>เพิ่ม / แก้ไข Audit Finding</h3>
+
+      <input type="hidden" id="docId" />
+
+      <div class="grid">
+        <div>
+          <label>สาขา</label>
+          <select id="branch">
+            <option value="SPR">SPR - สินแพทย์รามอินทรา</option>
+            <option value="SRR">SRR - สินแพทย์เสรีรักษ์</option>
+            <option value="SPT">SPT - สินแพทย์เทพารักษ์</option>
+            <option value="SPS">SPS - สินแพทย์ศรีนครินทร์</option>
+            <option value="SPL">SPL - สินแพทย์ลำลูกกา</option>
+            <option value="SPK">SPK - สินแพทย์กาญจนบุรี</option>
+            <option value="SPN">SPN - สินแพทย์นครปฐม</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Audit Area</label>
+          <input id="auditArea" placeholder="เช่น Fixed Asset, ITGC, Procurement" />
+        </div>
+
+        <div>
+          <label>Risk Level</label>
+          <select id="riskLevel">
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Status</label>
+          <select id="status">
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Closed">Closed</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Condition</label>
+      <textarea id="condition"></textarea>
+
+      <label>Criteria</label>
+      <textarea id="criteria"></textarea>
+
+      <label>Cause</label>
+      <textarea id="cause"></textarea>
+
+      <label>Effect / Risk</label>
+      <textarea id="effectRisk"></textarea>
+
+      <label>Recommendation</label>
+      <textarea id="recommendation"></textarea>
+
+      <div class="grid">
+        <div>
+          <label>Owner</label>
+          <input id="owner" placeholder="ชื่อผู้รับผิดชอบ" />
+        </div>
+
+        <div>
+          <label>Due Date</label>
+          <input id="dueDate" type="date" />
+        </div>
+
+        <div>
+          <label>Evidence Link</label>
+          <input id="evidenceLink" placeholder="Google Drive Link" />
+        </div>
+
+        <div>
+          <label>Finding ID</label>
+          <input id="findingId" placeholder="Auto / Manual เช่น FA-SPT-001" />
+        </div>
+      </div>
+
+      <br />
+      <button onclick="saveFinding()">บันทึก Finding</button>
+      <button onclick="resetForm()" class="secondary">ล้างฟอร์ม</button>
+    </div>
+
+    <div class="card">
+      <h3>Dashboard Filter</h3>
+      <div class="grid">
+        <select id="filterBranch" onchange="renderTable()">
+          <option value="">ทุกสาขา</option>
+          <option value="SPR">SPR</option>
+          <option value="SRR">SRR</option>
+          <option value="SPT">SPT</option>
+          <option value="SPS">SPS</option>
+          <option value="SPL">SPL</option>
+          <option value="SPK">SPK</option>
+          <option value="SPN">SPN</option>
+        </select>
+
+        <select id="filterRisk" onchange="renderTable()">
+          <option value="">ทุก Risk</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+
+        <select id="filterStatus" onchange="renderTable()">
+          <option value="">ทุก Status</option>
+          <option value="Open">Open</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Closed">Closed</option>
+        </select>
+
+        <button onclick="exportCSV()">Export Excel / CSV</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Audit Finding Register</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Finding ID</th>
+            <th>Branch</th>
+            <th>Audit Area</th>
+            <th>Risk</th>
+            <th>Status</th>
+            <th>Owner</th>
+            <th>Due Date</th>
+            <th>Aging</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="findingTable"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      updateDoc,
+      deleteDoc,
+      doc,
+      onSnapshot,
+      serverTimestamp,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+   const firebaseConfig = {
+  apiKey: "AIzaSyB2pb9YEhmeJhhT6W8Ek1oRug3TtWSqbMM",
+  authDomain: "auditflow-18f1e.firebaseapp.com",
+  projectId: "auditflow-18f1e",
+  storageBucket: "auditflow-18f1e.firebasestorage.app",
+  messagingSenderId: "454180070741",
+  appId: "1:454180070741:web:17a1b77698f1136750fbdc",
+  measurementId: "G-XTXT1YFGME"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+    let findings = [];
+
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const appDiv = document.getElementById("app");
+    const userInfo = document.getElementById("userInfo");
+
+    loginBtn.onclick = async () => {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    };
+
+    logoutBtn.onclick = async () => {
+      await signOut(auth);
+    };
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        userInfo.innerText = `${user.displayName} (${user.email})`;
+        loginBtn.classList.add("hidden");
+        logoutBtn.classList.remove("hidden");
+        appDiv.classList.remove("hidden");
+        listenFindings();
+      } else {
+        currentUser = null;
+        userInfo.innerText = "ยังไม่ได้เข้าสู่ระบบ";
+        loginBtn.classList.remove("hidden");
+        logoutBtn.classList.add("hidden");
+        appDiv.classList.add("hidden");
+      }
+    });
+
+    function listenFindings() {
+      const q = query(collection(db, "audit_findings"), orderBy("createdAt", "desc"));
+
+      onSnapshot(q, (snapshot) => {
+        findings = snapshot.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        }));
+
+        renderDashboard();
+        renderTable();
+      });
+    }
+
+    window.saveFinding = async function () {
+      const data = {
+        findingId: getValue("findingId") || generateFindingId(),
+        branch: getValue("branch"),
+        auditArea: getValue("auditArea"),
+        condition: getValue("condition"),
+        criteria: getValue("criteria"),
+        cause: getValue("cause"),
+        effectRisk: getValue("effectRisk"),
+        recommendation: getValue("recommendation"),
+        riskLevel: getValue("riskLevel"),
+        owner: getValue("owner"),
+        dueDate: getValue("dueDate"),
+        status: getValue("status"),
+        evidenceLink: getValue("evidenceLink"),
+        updatedAt: serverTimestamp()
+      };
+
+      const docId = getValue("docId");
+
+      if (docId) {
+        if (data.status === "Closed") {
+          data.closedAt = serverTimestamp();
+        }
+        await updateDoc(doc(db, "audit_findings", docId), data);
+      } else {
+        data.createdBy = currentUser.email;
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, "audit_findings"), data);
+      }
+
+      resetForm();
+      alert("บันทึกข้อมูลเรียบร้อย");
+    };
+
+    window.editFinding = function (id) {
+      const f = findings.find(x => x.id === id);
+      if (!f) return;
+
+      setValue("docId", f.id);
+      setValue("findingId", f.findingId);
+      setValue("branch", f.branch);
+      setValue("auditArea", f.auditArea);
+      setValue("condition", f.condition);
+      setValue("criteria", f.criteria);
+      setValue("cause", f.cause);
+      setValue("effectRisk", f.effectRisk);
+      setValue("recommendation", f.recommendation);
+      setValue("riskLevel", f.riskLevel);
+      setValue("owner", f.owner);
+      setValue("dueDate", f.dueDate);
+      setValue("status", f.status);
+      setValue("evidenceLink", f.evidenceLink);
+      window.scrollTo(0, 0);
+    };
+
+    window.deleteFinding = async function (id) {
+      if (!confirm("ยืนยันลบ Finding นี้?")) return;
+      await deleteDoc(doc(db, "audit_findings", id));
+    };
+
+    window.renderTable = function () {
+      const tbody = document.getElementById("findingTable");
+      const branch = getValue("filterBranch");
+      const risk = getValue("filterRisk");
+      const status = getValue("filterStatus");
+
+      let filtered = findings.filter(f => {
+        return (!branch || f.branch === branch)
+          && (!risk || f.riskLevel === risk)
+          && (!status || f.status === status);
+      });
+
+      tbody.innerHTML = filtered.map(f => {
+        const aging = calculateAging(f.dueDate, f.status);
+        const riskClass = f.riskLevel === "High" ? "risk-high" :
+                          f.riskLevel === "Medium" ? "risk-medium" : "risk-low";
+
+        return `
+          <tr>
+            <td>${f.findingId || ""}</td>
+            <td>${f.branch || ""}</td>
+            <td>${f.auditArea || ""}</td>
+            <td class="${riskClass}">${f.riskLevel || ""}</td>
+            <td>${f.status || ""}</td>
+            <td>${f.owner || ""}</td>
+            <td>${f.dueDate || ""}</td>
+            <td>${aging}</td>
+            <td>
+              <button onclick="editFinding('${f.id}')">แก้ไข</button>
+              <button class="danger" onclick="deleteFinding('${f.id}')">ลบ</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    };
+
+    function renderDashboard() {
+      const total = findings.length;
+      const high = findings.filter(f => f.riskLevel === "High").length;
+      const open = findings.filter(f => f.status !== "Closed").length;
+      const overdue = findings.filter(f => isOverdue(f.dueDate, f.status)).length;
+
+      document.getElementById("totalFinding").innerText = total;
+      document.getElementById("highRisk").innerText = high;
+      document.getElementById("openFinding").innerText = open;
+      document.getElementById("overdueFinding").innerText = overdue;
+    }
+
+    function calculateAging(dueDate, status) {
+      if (!dueDate || status === "Closed") return "-";
+
+      const today = new Date();
+      const due = new Date(dueDate);
+      const diff = Math.floor((today - due) / (1000 * 60 * 60 * 24));
+
+      if (diff > 0) return `Overdue ${diff} วัน`;
+      if (diff === 0) return "ครบกำหนดวันนี้";
+      return `เหลือ ${Math.abs(diff)} วัน`;
+    }
+
+    function isOverdue(dueDate, status) {
+      if (!dueDate || status === "Closed") return false;
+      return new Date(dueDate) < new Date(new Date().toDateString());
+    }
+
+    window.exportCSV = function () {
+      const headers = [
+        "Finding ID", "Branch", "Audit Area", "Condition", "Criteria",
+        "Cause", "Effect/Risk", "Recommendation", "Risk Level",
+        "Owner", "Due Date", "Status", "Evidence Link"
+      ];
+
+      const rows = findings.map(f => [
+        f.findingId, f.branch, f.auditArea, f.condition, f.criteria,
+        f.cause, f.effectRisk, f.recommendation, f.riskLevel,
+        f.owner, f.dueDate, f.status, f.evidenceLink
+      ]);
+
+      let csv = [headers, ...rows]
+        .map(row => row.map(value => `"${(value || "").toString().replaceAll('"', '""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "AuditFlow_v3_Finding_Register.csv";
+      a.click();
+    };
+
+    window.resetForm = function () {
+      [
+        "docId", "findingId", "auditArea", "condition", "criteria",
+        "cause", "effectRisk", "recommendation", "owner", "dueDate", "evidenceLink"
+      ].forEach(id => setValue(id, ""));
+
+      setValue("branch", "SPR");
+      setValue("riskLevel", "High");
+      setValue("status", "Open");
+    };
+
+    function generateFindingId() {
+      const year = new Date().getFullYear();
+      const running = String(findings.length + 1).padStart(3, "0");
+      return `AF-${year}-${running}`;
+    }
+
+    function getValue(id) {
+      return document.getElementById(id).value;
+    }
+
+    function setValue(id, value) {
+      document.getElementById(id).value = value || "";
+    }
+  </script>
+</body>
+</html>
