@@ -651,3 +651,43 @@ Due: ${f.dueDate || "-"}
 });
 
 }
+function renderKanban() {
+  const columns = {
+    Planning: document.getElementById("kanbanPlanning"),
+    Fieldwork: document.getElementById("kanbanFieldwork"),
+    Review: document.getElementById("kanbanReview"),
+    Follow: document.getElementById("kanbanFollow"),
+    Closed: document.getElementById("kanbanClosed")
+  };
+
+  Object.values(columns).forEach(c => {
+    if (c) c.innerHTML = "";
+  });
+
+  findings.forEach(f => {
+    let column = columns.Fieldwork;
+
+    if (f.status === "Open") column = columns.Planning;
+    if (f.status === "In Progress") column = columns.Fieldwork;
+    if (f.mapStatus === "Verified") column = columns.Review;
+    if (f.mapStatus === "Implemented") column = columns.Follow;
+    if (f.status === "Closed") column = columns.Closed;
+
+    if (!column) return;
+
+    let riskClass = "kanban-risk-low";
+    if (f.riskLevel === "High") riskClass = "kanban-risk-high";
+    if (f.riskLevel === "Medium") riskClass = "kanban-risk-medium";
+
+    column.innerHTML += `
+      <div class="kanban-card ${riskClass}">
+        <div class="kanban-card-title">${f.findingId || "-"}</div>
+        <div>${f.auditArea || ""}</div>
+        <hr>
+        <div>Risk: ${f.riskLevel || "-"}</div>
+        <div>Owner: ${f.owner || "-"}</div>
+        <div>Due: ${f.dueDate || "-"}</div>
+      </div>
+    `;
+  });
+}
