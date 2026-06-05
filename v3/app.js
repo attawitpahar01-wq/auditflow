@@ -600,3 +600,51 @@ function renderKanban() {
     `;
   });
 }
+/* =====================================================
+   Step 8.4 Fix Sidebar Navigation Click
+===================================================== */
+
+function showPage(pageId) {
+  document.querySelectorAll(".page, section").forEach(page => {
+    page.style.display = "none";
+  });
+
+  const target = document.getElementById(pageId);
+  if (target) {
+    target.style.display = "block";
+  }
+
+  document.querySelectorAll(".nav-btn, .sidebar button").forEach(btn => {
+    btn.classList.remove("active");
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const menuMap = [
+    ["Dashboard", "dashboardPage"],
+    ["Team Dashboard", "teamDashboardPage"],
+    ["Kanban Board", "kanbanPage"],
+    ["Finding Register", "registerPage"],
+    ["Add / Edit Finding", "formPage"],
+    ["Action Plan", "actionPlanPage"],
+    ["Risk Heatmap", "riskHeatmapPage"],
+    ["Evidence", "evidencePage"],
+    ["Report", "reportPage"],
+    ["Setting", "settingPage"]
+  ];
+
+  document.querySelectorAll(".sidebar button, .nav-btn").forEach(btn => {
+    btn.onclick = () => {
+      const text = btn.innerText.trim();
+
+      const found = menuMap.find(item => text.includes(item[0]));
+
+      if (found) {
+        showPage(found[1]);
+        btn.classList.add("active");
+      }
+    };
+  });
+
+  showPage("dashboardPage");
+});
