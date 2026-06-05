@@ -400,12 +400,13 @@ function renderBarChart(id, data) {
 let chartProgressObj, chartRiskObj, chartBranchObj, chartWorkloadObj;
 
 function renderCharts() {
-  renderProgressChart();
-  renderRiskChart();
-  renderBranchChart();
-  renderWorkloadChart();
+    setTimeout(() => {
+        renderProgressChart();
+        renderRiskChart();
+        renderBranchChart();
+        renderWorkloadChart();
+    }, 300);
 }
-
 function createOrUpdateChart(canvasId, config, chartObjName) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return null;
@@ -422,57 +423,157 @@ function renderProgressChart() {
   const closed = findings.filter(f => f.status === "Closed").length;
   const open = total - closed;
 
-  createOrUpdateChart("chartProgress", {
+ createOrUpdateChart("chartProgress", {
     type: "doughnut",
     data: {
-      labels: ["Closed", "Open"],
-      datasets: [{
-        data: [closed, open]
-      }]
+        labels: ["Closed", "Open"],
+        datasets: [{
+            data: [closed, open],
+            backgroundColor: ["#38bdf8", "#fb7185"],
+            borderColor: "#0f172a",
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "62%",
+        plugins: {
+            legend: {
+                position: "top"
+            }
+        }
     }
-  }, "chartProgressObj");
+}, "chartProgressObj");
 }
 
 function renderRiskChart() {
   const data = countBy("riskLevel");
 
-  createOrUpdateChart("chartRisk", {
-    type: "doughnut",
-    data: {
-      labels: Object.keys(data),
-      datasets: [{
-        data: Object.values(data)
-      }]
-    }
-  }, "chartRiskObj");
+  function renderRiskChart() {
+    const data = countBy("riskLevel");
+
+    createOrUpdateChart("chartRisk", {
+        type: "doughnut",
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                data: Object.values(data),
+                backgroundColor: [
+                    "#22c55e",
+                    "#facc15",
+                    "#ef4444"
+                ],
+                borderColor: "#0f172a",
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "62%",
+            plugins: {
+                legend: {
+                    position: "top"
+    }}}}, "chartRiskObj");}
 }
 
 function renderBranchChart() {
-  const data = countBy("branch");
+    const data = countBy("branch");
 
-  createOrUpdateChart("chartBranch", {
-    type: "bar",
-    data: {
-      labels: Object.keys(data),
-      datasets: [{
-        label: "Finding",
-        data: Object.values(data)
-      }]
-    }
-  }, "chartBranchObj");
+    createOrUpdateChart("chartBranch", {
+        type: "bar",
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label: "Finding",
+                data: Object.values(data),
+                backgroundColor: "#38bdf8",
+                borderRadius: 10,
+                barThickness: 38
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: "top"
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: "#94a3b8"
+                    },
+                    grid: {
+                        color: "rgba(148,163,184,0.08)"
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: "#94a3b8",
+                        precision: 0
+                    },
+                    grid: {
+                        color: "rgba(148,163,184,0.08)"
+                    }
+                }
+            }
+        }
+    }, "chartBranchObj");
 }
 function renderWorkloadChart() {
-  const data = countOpenByOwner();
-  createOrUpdateChart("chartWorkload", {
-    type: "bar",
-    data: {
-      labels: Object.keys(data),
-      datasets: [{
-        label: "Open Action",
-        data: Object.values(data)
-      }]
-    }
-  }, "chartWorkloadObj");
+    const data = countOpenByOwner();
+
+    createOrUpdateChart("chartWorkload", {
+        type: "bar",
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label: "Open Action",
+                data: Object.values(data),
+                backgroundColor: "#818cf8",
+                borderRadius: 10,
+                barThickness: 38
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    display: true,
+                    position: "top"
+                }
+            },
+
+            scales: {
+                x: {
+                    ticks: {
+                        color: "#94a3b8"
+                    },
+                    grid: {
+                        color: "rgba(148,163,184,0.08)"
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: "#94a3b8",
+                        precision: 0
+                    },
+                    grid: {
+                        color: "rgba(148,163,184,0.08)"
+                    }
+                }
+            }
+        }
+    }, "chartWorkloadObj");
 }
 function renderTeamDashboard(){
 const total = findings.length;
