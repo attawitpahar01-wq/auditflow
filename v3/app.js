@@ -210,6 +210,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
       renderRiskHeatmap();
       renderExecutiveDashboard();
       renderCharts();
+      renderTeamDashboard();
     }
 
     function calculateAging(dueDate, status) {
@@ -469,10 +470,8 @@ function renderBranchChart() {
     }
   }, "chartBranchObj");
 }
-
 function renderWorkloadChart() {
   const data = countOpenByOwner();
-
   createOrUpdateChart("chartWorkload", {
     type: "bar",
     data: {
@@ -484,3 +483,79 @@ function renderWorkloadChart() {
     }
   }, "chartWorkloadObj");
 }
+function renderTeamDashboard(){
+const total = findings.length;
+const progress =
+findings.filter(f =>
+f.status === "In Progress"
+).length;
+const follow =
+findings.filter(f =>
+f.status !== "Closed"
+).length;
+const closed =
+findings.filter(f =>
+f.status === "Closed"
+).length;
+document.getElementById("teamTotal").innerText = total;
+document.getElementById("teamProgress").innerText = progress;
+document.getElementById("teamFollow").innerText = follow;
+document.getElementById("teamClosed").innerText = closed;
+renderTeamWorkload();
+renderTeamTable();
+}
+function renderTeamWorkload(){
+const data = {};
+findings.forEach(f=>{
+const owner = f.owner || "ไม่ระบุ";
+data[owner] =
+(data[owner] || 0) + 1;
+});
+let html="";
+Object.keys(data).forEach(owner=>{
+html += `
+<div class="bar-row">
+<div>${owner}</div>
+<div class="bar-bg">
+<div class="bar-fill"
+style="width:${data[owner]*10}%">
+</div>
+</div>
+<div>${data[owner]}</div>
+</div>
+`;
+});
+document.getElementById("teamWorkload").innerHTML = html;
+}
+function renderTeamTable(){
+const owners = {};
+findings.forEach(f=>{
+const owner = f.owner || "ไม่ระบุ";
+if(!owners[owner]){
+owners[owner]={
+total:0,
+closed:0
+};
+}
+owners[owner].total++;
+if(f.status==="Closed"){
+owners[owner].closed++;
+}
+});
+let html="";
+Object.keys(owners).forEach(o=>{
+const pct =
+Math.round(
+(owners[o].closed /
+owners[o].total)*100
+);
+html +=`
+<tr>
+<td>${o}</td>
+<td>${owners[o].total}</td>
+<td>${owners[o].closed}</td>
+<td>${pct}%</td>
+</tr>
+`;
+});
+document.getElementById("teamTable").innerHTML = html;}
