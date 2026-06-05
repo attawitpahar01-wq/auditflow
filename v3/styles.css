@@ -180,3 +180,56 @@ body {
 .page-section.hidden {
   display: none !important;
 }
+/* =========================
+   Kanban Board
+========================= */
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+
+.kanban-column {
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 400px;
+}
+
+
+.kanban-column h4 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+
+.kanban-card {
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+
+
+.kanban-card-title {
+  font-weight: bold;
+}
+
+
+.kanban-risk-high {
+  border-left: 5px solid #dc2626;
+}
+
+
+.kanban-risk-medium {
+  border-left: 5px solid #d97706;
+}
+
+
+.kanban-risk-low {
+  border-left: 5px solid #16a34a;
+}
