@@ -352,3 +352,126 @@ button:hover,
     height: 280px;
   }
 }
+/* =====================================================
+   Step 8.1 Fix Chart.js Oversize
+   AuditFlow V3 Compact Executive Dashboard
+===================================================== */
+
+
+/* Executive Analytics Container */
+.analytics-section,
+.dashboard-section,
+.chart-section {
+    margin-top: 20px;
+    padding: 20px;
+
+    background: #0f172a;
+    border-radius: 18px;
+    border: 1px solid #334155;
+
+    max-width: 100%;
+}
+
+
+/* Chart Layout */
+.chart-grid,
+.charts-grid,
+#dashboardCharts {
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+
+    align-items: stretch;
+}
+
+
+/* Individual Chart Card */
+.chart-card,
+.chart-box {
+
+    background: #111827;
+
+    border-radius: 16px;
+    border: 1px solid #334155;
+
+    padding: 16px;
+
+    height: 330px !important;
+
+    overflow: hidden;
+}
+
+
+/* Force Chart.js Size */
+canvas {
+
+    max-height: 260px !important;
+    height: 260px !important;
+
+    width: 100% !important;
+
+}
+
+
+/* Donut / Pie Fix */
+canvas[id*="Chart"],
+canvas[id*="chart"] {
+
+    max-width: 100%;
+}
+
+
+/* KPI Cards Fix */
+.kpi-grid,
+.summary-cards {
+
+    display:grid;
+
+    grid-template-columns: repeat(4,1fr);
+
+    gap:15px;
+
+}
+
+
+.kpi-card,
+.summary-card {
+
+    height:100px;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+
+}
+
+
+/* Dashboard spacing */
+main {
+
+    padding:24px;
+
+}
+
+
+/* Mobile */
+@media(max-width:900px){
+
+.chart-grid,
+.charts-grid,
+#dashboardCharts {
+
+grid-template-columns:1fr;
+
+}
+
+
+.kpi-grid,
+.summary-cards{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+}
