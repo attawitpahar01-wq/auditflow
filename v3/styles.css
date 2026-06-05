@@ -588,11 +588,6 @@ canvas {
 .page-section {
   display: none;
 }
-
-#pageDashboard {
-  display: block;
-}
-
 /* Sidebar button active */
 .sidebar button.active {
   background: #1e293b !important;
