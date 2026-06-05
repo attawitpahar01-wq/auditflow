@@ -114,9 +114,40 @@
     <section id="pageTeam" class="page-section hidden">
 <div class="card">
 <h3>👥 Team Dashboard</h3>
-<p>
-Supervisor Dashboard สำหรับติดตามทีมตรวจสอบภายใน
-</p>
+<div class="grid">
+<div class="card">
+<div>งานทั้งหมด</div>
+<div class="kpi" id="teamTotal">0</div>
+</div>
+<div class="card">
+<div>กำลังดำเนินการ</div>
+<div class="kpi" id="teamProgress">0</div>
+</div>
+<div class="card">
+<div>รอ Follow-up</div>
+<div class="kpi" id="teamFollow">0</div>
+</div>
+<div class="card">
+<div>ปิดแล้ว</div>
+<div class="kpi" id="teamClosed">0</div>
+</div>
+</div>
+<hr>
+<h3>Auditor Workload</h3>
+<div id="teamWorkload"></div>
+<hr>
+<h3>Team Member Progress</h3>
+<table>
+<thead>
+<tr>
+<th>Auditor</th>
+<th>Total</th>
+<th>Closed</th>
+<th>Progress</th>
+</tr>
+</thead>
+<tbody id="teamTable"></tbody>
+</table>
 </div>
 </section>
     <section id="pageForm" class="page-section hidden">
