@@ -25,6 +25,7 @@
     <aside class="sidebar">
       <div class="logo">Audit<span>Flow</span></div>
       <button class="nav active" data-view="dashboard">Dashboard</button>
+      <button class="nav" data-view="team">ภาพรวมทีม</button>
       <button class="nav" data-view="kanban">Kanban Board</button>
       <button class="nav" data-view="table">ทะเบียนงาน</button>
       <button class="nav" data-view="evidence">Evidence</button>
@@ -56,6 +57,40 @@
         <div class="panel">
           <h2>สรุปตามสาขา</h2>
           <div id="branch-summary" class="branch-grid"></div>
+        </div>
+      </section>
+
+
+      <section id="view-team" class="view">
+        <div class="stats-grid">
+          <div class="stat"><span>📋 งานทั้งหมด</span><strong id="team-total">0</strong></div>
+          <div class="stat"><span>🕒 รอดำเนินการ</span><strong id="team-pending">0</strong></div>
+          <div class="stat"><span>⚠️ กำลังดำเนินการ</span><strong id="team-progress">0</strong></div>
+          <div class="stat"><span>✅ เสร็จสิ้น</span><strong id="team-done">0</strong></div>
+        </div>
+        <div class="panel">
+          <h2>ความคืบหน้าภาพรวมทีม</h2>
+          <div style="font-size:36px;font-weight:700;text-align:center;padding:30px" id="team-percent">0%</div>
+          <p>🔵 รอดำเนินการ: <span id="team-pending-text">0</span> งาน</p>
+          <p>🟠 กำลังทำ: <span id="team-progress-text">0</span> งาน</p>
+          <p>🟢 เสร็จสิ้น: <span id="team-done-text">0</span> งาน</p>
+        </div>
+        <div class="panel">
+          <h2>ความคืบหน้าของสมาชิกแต่ละคน</h2>
+          <div id="team-member-summary">
+            <p>N. วิรชา วิบูลย์รถ — 0/0 งาน (0%)</p>
+            <p>I. ไอซเราะห์ สามะ — 0/0 งาน (0%)</p>
+            <p>P. พรทิพา บุญช่วย — 0/0 งาน (0%)</p>
+            <p>N. อรรถวิทย์ พาหาร — 0/0 งาน (0%)</p>
+            <p>S. สุเทพ คงทอง — 0/0 งาน (0%)</p>
+          </div>
+        </div>
+        <div class="panel table-wrap">
+          <h2>รายการงานทั้งหมดของทีม</h2>
+          <table>
+          <thead><tr><th>ชื่องาน</th><th>ผู้รับผิดชอบ</th><th>สาขา</th><th>ระดับความสำคัญ</th><th>วันส่งงาน</th><th>สถานะ</th></tr></thead>
+          <tbody id="team-task-table"></tbody>
+          </table>
         </div>
       </section>
 
