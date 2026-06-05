@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <datalist id="team-owner-list"></datalist>
   <div id="login-screen" class="login-screen">
     <div class="login-card">
       <div class="brand-mark">AF</div>
@@ -75,15 +76,12 @@
           <p>🟠 กำลังทำ: <span id="team-progress-text">0</span> งาน</p>
           <p>🟢 เสร็จสิ้น: <span id="team-done-text">0</span> งาน</p>
         </div>
-        <div class="panel">
-          <h2>ความคืบหน้าของสมาชิกแต่ละคน</h2>
-          <div id="team-member-summary">
-            <p>N. วิรชา วิบูลย์รถ — 0/0 งาน (0%)</p>
-            <p>I. ไอซเราะห์ สามะ — 0/0 งาน (0%)</p>
-            <p>P. พรทิพา บุญช่วย — 0/0 งาน (0%)</p>
-            <p>N. อรรถวิทย์ พาหาร — 0/0 งาน (0%)</p>
-            <p>S. สุเทพ คงทอง — 0/0 งาน (0%)</p>
+        <div class="panel team-panel">
+          <div class="panel-head-inline">
+            <h2>ความคืบหน้าของสมาชิกแต่ละคน</h2>
+            <button type="button" id="btn-open-team-modal" class="btn secondary small">แก้ไขทีมงาน</button>
           </div>
+          <div id="team-member-summary" class="member-progress-list"></div>
         </div>
         <div class="panel table-wrap">
           <h2>รายการงานทั้งหมดของทีม</h2>
@@ -134,7 +132,7 @@
       <label>รายละเอียด<textarea id="task-desc" rows="3" placeholder="ระบุวัตถุประสงค์ ขั้นตอนตรวจสอบ หรือประเด็นที่ต้องติดตาม"></textarea></label>
       <div class="form-grid">
         <label>สาขา<select id="task-branch" required></select></label>
-        <label>ผู้รับผิดชอบ<input id="task-owner" required placeholder="เช่น คุณนัท / Auditor 1" /></label>
+        <label>ผู้รับผิดชอบ<input id="task-owner" list="team-owner-list" required placeholder="เลือก/พิมพ์ชื่อทีมงาน" /></label>
         <label>Risk<select id="task-risk"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
         <label>Status<select id="task-status"><option value="planning">Planning</option><option value="fieldwork">Fieldwork</option><option value="review">Review</option><option value="done">Done</option></select></label>
         <label>Due Date<input id="task-due" type="date" required /></label>
@@ -153,6 +151,114 @@
     </form>
   </div>
 
+
+
+  <div id="team-modal" class="modal hidden">
+    <form id="team-form" class="modal-card">
+      <div class="modal-head">
+        <h2>แก้ไขทีมงาน</h2>
+        <button type="button" id="btn-close-team-modal" class="icon-btn">×</button>
+      </div>
+      <p class="muted">เพิ่ม/แก้ไขรายชื่อทีมงาน แล้วระบบจะนำไปใช้กับช่องผู้รับผิดชอบและคำนวณความคืบหน้าตามชื่องานที่รับผิดชอบ</p>
+      <div id="team-editor-list" class="team-editor-list"></div>
+      <div class="modal-actions">
+        <button type="button" id="btn-add-member" class="btn secondary">+ เพิ่มสมาชิก</button>
+        <button type="submit" class="btn primary">บันทึกทีมงาน</button>
+      </div>
+    </form>
+  </div>
+
   <script type="module" src="app.js"></script>
+
+
+  <style>
+    .panel-head-inline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.muted{color:#94a3b8}.team-editor-list{display:grid;gap:10px;margin:14px 0}.team-editor-row{display:grid;grid-template-columns:90px 1fr 44px;gap:10px;align-items:center}.team-editor-row input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.28);background:#0f172a;color:#e5e7eb}.member-progress-item{display:grid;grid-template-columns:44px 1fr 92px;gap:14px;align-items:center;margin:14px 0}.member-avatar{width:38px;height:38px;border:2px solid #8b5cf6;border-radius:999px;display:grid;place-items:center;font-weight:700;background:rgba(139,92,246,.12)}.member-name{font-weight:700}.member-meta{color:#94a3b8;font-size:13px}.member-bar{height:10px;border-radius:999px;background:#273244;overflow:hidden;margin-top:7px}.member-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#8b5cf6,#22c55e);width:0}.member-percent{text-align:right;font-weight:800;color:#22c55e}.btn.small{padding:8px 12px;font-size:13px}.btn.secondary.small{background:#334155;color:#e5e7eb}.team-empty{color:#94a3b8;padding:10px 0}
+  </style>
+
+  <script>
+  (function(){
+    const DEFAULT_MEMBERS = [
+      {initial:'N', name:'วิรชา วิบูลย์รถ'},
+      {initial:'I', name:'ไอซเราะห์ สามะ'},
+      {initial:'P', name:'พรทิพา บุญช่วย'},
+      {initial:'N', name:'อรรถวิทย์ พาหาร'},
+      {initial:'S', name:'สุเทพ คงทอง'}
+    ];
+    const KEY = 'auditflow_team_members_v1';
+    const STATUS_DONE = new Set(['done','เสร็จสิ้น','completed','complete']);
+    const STATUS_PROGRESS = new Set(['fieldwork','review','กำลังทำ','กำลังดำเนินการ','in progress','progress']);
+    function loadMembers(){
+      try { return JSON.parse(localStorage.getItem(KEY)) || DEFAULT_MEMBERS; } catch(e){ return DEFAULT_MEMBERS; }
+    }
+    function saveMembers(members){ localStorage.setItem(KEY, JSON.stringify(members)); }
+    function norm(v){ return (v || '').toString().trim().toLowerCase(); }
+    function statusType(v){
+      const x = norm(v);
+      if (STATUS_DONE.has(x)) return 'done';
+      if (STATUS_PROGRESS.has(x)) return 'progress';
+      return 'pending';
+    }
+    function getTasksFromMainTable(){
+      return Array.from(document.querySelectorAll('#task-table tr')).map(tr => {
+        const td = tr.querySelectorAll('td');
+        if (td.length < 6) return null;
+        return {title: td[0]?.innerText.trim() || '-', branch: td[1]?.innerText.trim() || '-', owner: td[2]?.innerText.trim() || '-', risk: td[3]?.innerText.trim() || '-', due: td[4]?.innerText.trim() || '-', status: td[5]?.innerText.trim() || '-'};
+      }).filter(Boolean);
+    }
+    function fillOwnerList(){
+      const dl = document.getElementById('team-owner-list'); if(!dl) return;
+      dl.innerHTML = loadMembers().map(m => `<option value="${m.name.replace(/"/g,'&quot;')}"></option>`).join('');
+      const filterOwner = document.getElementById('filter-owner');
+      if (filterOwner && filterOwner.options.length <= 1) {
+        loadMembers().forEach(m => filterOwner.insertAdjacentHTML('beforeend', `<option>${m.name}</option>`));
+      }
+    }
+    function renderTeamEditor(){
+      const box = document.getElementById('team-editor-list'); if(!box) return;
+      const members = loadMembers();
+      box.innerHTML = members.map((m,i)=>`<div class="team-editor-row" data-i="${i}"><input class="member-initial-input" maxlength="2" value="${m.initial || ''}" placeholder="ตัวย่อ"><input class="member-name-input" value="${m.name || ''}" placeholder="ชื่อ-นามสกุล"><button type="button" class="icon-btn btn-remove-member">×</button></div>`).join('');
+    }
+    function readEditorMembers(){
+      return Array.from(document.querySelectorAll('.team-editor-row')).map(row => ({initial: row.querySelector('.member-initial-input').value.trim().slice(0,2) || '•', name: row.querySelector('.member-name-input').value.trim()})).filter(m => m.name);
+    }
+    function renderTeamDashboard(){
+      const tasks = getTasksFromMainTable();
+      const counts = {pending:0, progress:0, done:0};
+      tasks.forEach(t => counts[statusType(t.status)]++);
+      const total = tasks.length, pct = total ? Math.round(counts.done / total * 100) : 0;
+      const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
+      set('team-total', total); set('team-pending', counts.pending); set('team-progress', counts.progress); set('team-done', counts.done); set('team-percent', pct+'%');
+      set('team-pending-text', counts.pending); set('team-progress-text', counts.progress); set('team-done-text', counts.done);
+      const members = loadMembers();
+      const summary = document.getElementById('team-member-summary');
+      if(summary){
+        summary.innerHTML = members.map(m => {
+          const mine = tasks.filter(t => norm(t.owner).includes(norm(m.name)) || norm(t.owner) === norm(m.initial));
+          const done = mine.filter(t => statusType(t.status)==='done').length;
+          const mpct = mine.length ? Math.round(done / mine.length * 100) : 0;
+          return `<div class="member-progress-item"><div class="member-avatar">${m.initial || '•'}</div><div><div class="member-name">${m.name}</div><div class="member-meta">${done}/${mine.length} งาน</div><div class="member-bar"><span style="width:${mpct}%"></span></div></div><div class="member-percent">${mpct}%</div></div>`;
+        }).join('') || '<div class="team-empty">ยังไม่มีรายชื่อทีมงาน</div>';
+      }
+      const tbody = document.getElementById('team-task-table');
+      if(tbody){
+        tbody.innerHTML = tasks.map(t=>`<tr><td>${t.title}</td><td>${t.owner}</td><td>${t.branch}</td><td>${t.risk}</td><td>${t.due}</td><td>${t.status}</td></tr>`).join('') || '<tr><td colspan="6" class="team-empty">ยังไม่มีรายการงาน</td></tr>';
+      }
+    }
+    function setup(){
+      fillOwnerList(); renderTeamEditor(); renderTeamDashboard();
+      document.getElementById('btn-open-team-modal')?.addEventListener('click',()=>{ renderTeamEditor(); document.getElementById('team-modal')?.classList.remove('hidden'); });
+      document.getElementById('btn-close-team-modal')?.addEventListener('click',()=>document.getElementById('team-modal')?.classList.add('hidden'));
+      document.getElementById('btn-add-member')?.addEventListener('click',()=>{ document.getElementById('team-editor-list')?.insertAdjacentHTML('beforeend','<div class="team-editor-row"><input class="member-initial-input" maxlength="2" placeholder="ตัวย่อ"><input class="member-name-input" placeholder="ชื่อ-นามสกุล"><button type="button" class="icon-btn btn-remove-member">×</button></div>'); });
+      document.getElementById('team-editor-list')?.addEventListener('click',e=>{ if(e.target.classList.contains('btn-remove-member')) e.target.closest('.team-editor-row').remove(); });
+      document.getElementById('team-form')?.addEventListener('submit',e=>{ e.preventDefault(); saveMembers(readEditorMembers()); fillOwnerList(); renderTeamDashboard(); document.getElementById('team-modal')?.classList.add('hidden'); });
+      const taskTable = document.getElementById('task-table');
+      if(taskTable) new MutationObserver(renderTeamDashboard).observe(taskTable,{childList:true,subtree:true,characterData:true});
+      document.addEventListener('click', e => { if(e.target?.matches('.nav,[data-view]')) setTimeout(renderTeamDashboard, 80); });
+      setInterval(renderTeamDashboard, 2000);
+    }
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+  })();
+  </script>
+
 </body>
 </html>
