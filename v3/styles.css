@@ -1,235 +1,354 @@
+/* =====================================================
+   AuditFlow v3 - Enterprise Dark Theme
+   Step 8: Dashboard UI + Compact Chart
+===================================================== */
+
+:root {
+  --bg-main: #0f172a;
+  --bg-sidebar: #020617;
+  --bg-card: #111827;
+  --bg-card-soft: #1e293b;
+  --border: #334155;
+
+  --text-main: #e5e7eb;
+  --text-muted: #94a3b8;
+
+  --primary: #38bdf8;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #fb7185;
+  --purple: #a78bfa;
+
+  --radius: 14px;
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Global */
+* {
+  box-sizing: border-box;
+}
+
 body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f4f6f9;
-      color: #1f2937;
-    }
-
-    header {
-      background: #0f172a;
-      color: white;
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .container {
-      padding: 20px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
-
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      box-sizing: border-box;
-    }
-    textarea {min-height: 70px;}
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button.danger {background: #dc2626;}
-    button.secondary {background: #64748b;}
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-    }
-    th, td {
-      border-bottom: 1px solid #e5e7eb;
-      padding: 10px;
-      text-align: left;
-      font-size: 14px;
-      vertical-align: top;
-    }
-    th {
-      background: #f1f5f9;
-    }
-    .risk-high {
-      color: #dc2626;
-      font-weight: bold;
-    }
-    .risk-medium {
-      color: #d97706;
-      font-weight: bold;
-    }
-    .risk-low {
-      color: #16a34a;
-      font-weight: bold;
-    }
-    .kpi {
-      font-size: 26px;
-      font-weight: bold;
-    }
-   .hidden {display: none;}
-/* Risk Heatmap */
-.heatmap {
-  display: grid;
-  grid-template-columns: 100px repeat(5, 1fr);
-  gap: 6px;
-  margin-top: 15px;
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Tahoma, sans-serif;
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-size: 13px;
 }
-.heatmap-cell {
-  padding: 18px;
-  text-align: center;
-  border-radius: 8px;
-  font-weight: bold;
-  color: white;
-}
-.heatmap-label {
-  padding: 18px;
-  text-align: center;
-  font-weight: bold;
-}
-.hm-low {background: #16a34a;}
-.hm-medium {background: #d97706;}
-.hm-high {background: #dc2626;}
 
-/* Executive Dashboard Bar */
-.bar-row {
-  display: grid;
-  grid-template-columns: 120px 1fr 50px;
+/* Top Bar */
+header,
+.topbar {
+  height: 58px;
+  background: linear-gradient(90deg, #020617, #0f172a);
+  border-bottom: 1px solid var(--border);
+  display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 8px 0;
-}
-.bar-bg {
-  background: #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-  height: 22px;
-}
-.bar-fill {
-  height: 22px;
-  background: #2563eb;
-  border-radius: 8px;
-}
-.bar-label {
-  font-weight: bold;
-}
-.bar-value {
-  text-align: right;
-  font-weight: bold;
-}
-/* Fix Sidebar Layout */
-
-#app.layout:not(.hidden) {
-  display: flex !important;
-  min-height: calc(100vh - 90px);
+  justify-content: space-between;
+  padding: 0 22px;
+  color: #fff;
 }
 
-.layout.hidden {
-  display: none !important;
+header h1,
+.topbar h1 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 700;
 }
 
+/* Layout */
+.app,
+.container,
+.main-layout {
+  display: flex;
+  min-height: calc(100vh - 58px);
+  background: var(--bg-main);
+}
+
+/* Sidebar */
 .sidebar {
-  width: 240px !important;
-  min-width: 240px;
-  background: #0f172a;
-  color: white;
-  padding: 20px;
+  width: 240px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  padding: 18px 12px;
+  min-height: calc(100vh - 58px);
 }
 
-.sidebar h2 {
-  color: white;
-  margin-bottom: 20px;
+.sidebar h2,
+.sidebar-title {
+  font-size: 16px;
+  margin: 0 0 18px;
+  color: #fff;
 }
 
-.sidebar button {
-  display: block;
+.sidebar button,
+.sidebar a,
+.nav-btn {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  padding: 10px 12px;
   margin-bottom: 8px;
-  padding: 12px;
-  background: #1e293b;
-  color: white;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  text-align: left;
-}
-
-.sidebar button:hover {
-  background: #2563eb;
-}
-
-.main-content {
-  flex: 1;
-  padding: 20px;
-  background: #f4f6f9;
-}
-
-.page-section.hidden {
-  display: none !important;
-}
-/* =========================
-   Kanban Board
-========================= */
-
-.kanban-board {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 15px;
-  margin-top: 20px;
-}
-
-
-.kanban-column {
-  background: #f1f5f9;
-  border-radius: 12px;
-  padding: 12px;
-  min-height: 400px;
-}
-
-
-.kanban-column h4 {
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-
-.kanban-card {
-  background: white;
   border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 13px;
+  transition: all 0.2s ease;
 }
 
-
-.kanban-card-title {
-  font-weight: bold;
+.sidebar button:hover,
+.sidebar a:hover,
+.nav-btn:hover,
+.nav-btn.active {
+  background: #1e293b;
+  color: #fff;
+  border-color: #334155;
 }
 
-
-.kanban-risk-high {
-  border-left: 5px solid #dc2626;
+/* Main Content */
+main,
+.content,
+.dashboard-content {
+  flex: 1;
+  padding: 22px;
+  overflow-x: hidden;
 }
 
-
-.kanban-risk-medium {
-  border-left: 5px solid #d97706;
+/* KPI Cards */
+.kpi-grid,
+.summary-cards,
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
 }
 
+.card,
+.kpi-card,
+.summary-card {
+  background: linear-gradient(180deg, #111827, #0f172a);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
 
-.kanban-risk-low {
-  border-left: 5px solid #16a34a;
+.kpi-card h3,
+.summary-card h3,
+.card h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.kpi-card .value,
+.summary-card .value,
+.card .value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* KPI Accent */
+.kpi-card:nth-child(1) {
+  border-left: 4px solid var(--primary);
+}
+
+.kpi-card:nth-child(2) {
+  border-left: 4px solid var(--danger);
+}
+
+.kpi-card:nth-child(3) {
+  border-left: 4px solid var(--warning);
+}
+
+.kpi-card:nth-child(4) {
+  border-left: 4px solid var(--success);
+}
+
+/* Dashboard Section */
+.dashboard-section,
+.analytics-section,
+.chart-section {
+  background: #020617;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.dashboard-section h2,
+.analytics-section h2,
+.chart-section h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Compact Chart Grid */
+.chart-grid,
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.chart-card {
+  background: #111827;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  height: 320px;
+  box-shadow: var(--shadow);
+}
+
+.chart-card h3,
+.chart-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+/* Force Compact Canvas */
+.chart-card canvas {
+  max-height: 250px !important;
+  width: 100% !important;
+}
+
+/* Table / Register */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #111827;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th {
+  background: #1e293b;
+  color: #e5e7eb;
+  text-align: left;
+  padding: 10px;
+  font-size: 12px;
+}
+
+td {
+  padding: 10px;
+  border-top: 1px solid #334155;
+  color: #cbd5e1;
+}
+
+/* Forms */
+input,
+select,
+textarea {
+  background: #020617;
+  color: #e5e7eb;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 9px 10px;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+}
+
+/* Buttons */
+button,
+.btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 13px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover,
+.btn:hover {
+  background: #1d4ed8;
+}
+
+/* Status Badges */
+.badge,
+.status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge-high,
+.risk-high {
+  background: rgba(251, 113, 133, 0.18);
+  color: #fb7185;
+}
+
+.badge-medium,
+.risk-medium {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+
+.badge-low,
+.risk-low {
+  background: rgba(34, 197, 94, 0.18);
+  color: #22c55e;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .kpi-grid,
+  .summary-cards,
+  .dashboard-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-grid,
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .app,
+  .container,
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+
+  main,
+  .content,
+  .dashboard-content {
+    padding: 14px;
+  }
+
+  .kpi-grid,
+  .summary-cards,
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card {
+    height: 280px;
+  }
 }
