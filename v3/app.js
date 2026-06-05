@@ -593,61 +593,30 @@ function renderKanban() {
 /* =====================================================
    Step 8.4 Fix Sidebar Navigation Click - Correct Page ID
 ===================================================== */
-
-function showPage(pageId) {
+window.showPage = function(pageId) {
   document.querySelectorAll(".page-section").forEach(page => {
+    page.classList.add("hidden");
     page.style.display = "none";
   });
 
   const target = document.getElementById(pageId);
   if (target) {
+    target.classList.remove("hidden");
     target.style.display = "block";
   }
 
   document.querySelectorAll(".sidebar button").forEach(btn => {
     btn.classList.remove("active");
+
+    const click = btn.getAttribute("onclick") || "";
+    if (click.includes(pageId)) {
+      btn.classList.add("active");
+    }
   });
 
-  const activeBtn = document.querySelector(
-    `.sidebar button[onclick="showPage('${pageId}')"]`
-  );
-
-  if (activeBtn) {
-    activeBtn.classList.add("active");
-  }
-}
+  window.scrollTo(0, 0);
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   showPage("pageDashboard");
-});
-window.showPage = function (pageId) {
-
-  document.querySelectorAll(".page-section").forEach(page => {
-    page.style.display = "none";
-  });
-
-
-  const target = document.getElementById(pageId);
-
-  if(target){
-    target.style.display = "block";
-  }
-
-
-  document.querySelectorAll(".sidebar button").forEach(btn=>{
-    btn.classList.remove("active");
-
-    let click = btn.getAttribute("onclick") || "";
-
-    if(click.includes(pageId)){
-      btn.classList.add("active");
-    }
-
-  });
-
-};
-
-
-document.addEventListener("DOMContentLoaded",()=>{
-   showPage("pageDashboard");
 });
