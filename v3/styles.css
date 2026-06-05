@@ -594,16 +594,18 @@ canvas {
   color: #ffffff !important;
   border: 1px solid #334155 !important;
 }
-.hidden,
-.page-section.hidden,
-section.hidden {
-  display: none !important;
+/* ===============================
+   Page Navigation Control
+================================ */
+
+.hidden {
+    display: none;
 }
 
 .page-section {
-  display: none !important;
+    display: none;
 }
 
 .page-section.active-page {
-  display: block !important;
+    display: block;
 }
