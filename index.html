@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <datalist id="team-owner-list"></datalist>
   <div id="login-screen" class="login-screen">
     <div class="login-card">
       <div class="brand-mark">AF</div>
@@ -207,7 +206,7 @@
       <label>รายละเอียด<textarea id="task-desc" rows="3" placeholder="ระบุวัตถุประสงค์ ขั้นตอนตรวจสอบ หรือประเด็นที่ต้องติดตาม"></textarea></label>
       <div class="form-grid">
         <label>สาขา<select id="task-branch" required></select></label>
-        <label>ผู้รับผิดชอบ<input id="task-owner" list="team-owner-list" required placeholder="เลือก/พิมพ์ชื่อทีมงาน" /></label>
+        <label>ผู้รับผิดชอบ<select id="task-owner" required></select></label>
         <label>Risk<select id="task-risk"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
         <label>Status<select id="task-status"><option value="planning">Planning</option><option value="fieldwork">Fieldwork</option><option value="review">Review</option><option value="done">Done</option></select></label>
         <label>Due Date<input id="task-due" type="date" required /></label>
@@ -258,91 +257,7 @@
     .executive-analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}.analytics-wide{grid-template-columns:1.15fr .85fr}.executive-bottom-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:18px;margin-top:18px}.chart-panel{min-height:330px}.panel-subtitle{margin:4px 0 0;color:#94a3b8;font-size:13px}.kpi-pill{display:inline-flex;align-items:center;justify-content:center;min-width:72px;height:34px;padding:0 14px;border-radius:999px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#22c55e;font-weight:900}.chart-box{position:relative;width:100%;height:250px;margin-top:14px}.donut-chart-box{height:245px}.bar-chart-box{height:280px}.insight-list{display:grid;gap:12px;margin-top:12px}.insight-item{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border-radius:14px;background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.12)}.insight-icon{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:rgba(139,92,246,.18);color:#a78bfa;flex:0 0 auto}.insight-item strong{display:block;color:#f8fafc;margin-bottom:2px}.insight-item span{color:#9ca3af;font-size:13px}.mini-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}.mini-kpi{padding:14px;border-radius:16px;background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.12)}.mini-kpi span{display:block;color:#94a3b8;font-size:12px}.mini-kpi strong{display:block;color:#f8fafc;font-size:24px;margin-top:6px}@media(max-width:1200px){.executive-analytics-grid,.analytics-wide,.executive-bottom-grid{grid-template-columns:1fr}.chart-box{height:260px}}
 
   </style>
-
-  <script>
-  (function(){
-    const DEFAULT_MEMBERS = [
-      {initial:'N', name:'วิรชา วิบูลย์รถ'},
-      {initial:'I', name:'ไอซเราะห์ สามะ'},
-      {initial:'P', name:'พรทิพา บุญช่วย'},
-      {initial:'N', name:'อรรถวิทย์ พาหาร'},
-      {initial:'S', name:'สุเทพ คงทอง'}
-    ];
-    const KEY = 'auditflow_team_members_v1';
-    const STATUS_DONE = new Set(['done','เสร็จสิ้น','completed','complete']);
-    const STATUS_PROGRESS = new Set(['fieldwork','review','กำลังทำ','กำลังดำเนินการ','in progress','progress']);
-    function loadMembers(){
-      try { return JSON.parse(localStorage.getItem(KEY)) || DEFAULT_MEMBERS; } catch(e){ return DEFAULT_MEMBERS; }
-    }
-    function saveMembers(members){ localStorage.setItem(KEY, JSON.stringify(members)); }
-    function norm(v){ return (v || '').toString().trim().toLowerCase(); }
-    function statusType(v){
-      const x = norm(v);
-      if (STATUS_DONE.has(x)) return 'done';
-      if (STATUS_PROGRESS.has(x)) return 'progress';
-      return 'pending';
-    }
-    function getTasksFromMainTable(){
-      return Array.from(document.querySelectorAll('#task-table tr')).map(tr => {
-        const td = tr.querySelectorAll('td');
-        if (td.length < 6) return null;
-        return {title: td[0]?.innerText.trim() || '-', branch: td[1]?.innerText.trim() || '-', owner: td[2]?.innerText.trim() || '-', risk: td[3]?.innerText.trim() || '-', due: td[4]?.innerText.trim() || '-', status: td[5]?.innerText.trim() || '-'};
-      }).filter(Boolean);
-    }
-    function fillOwnerList(){
-      const dl = document.getElementById('team-owner-list'); if(!dl) return;
-      dl.innerHTML = loadMembers().map(m => `<option value="${m.name.replace(/"/g,'&quot;')}"></option>`).join('');
-      const filterOwner = document.getElementById('filter-owner');
-      if (filterOwner && filterOwner.options.length <= 1) {
-        loadMembers().forEach(m => filterOwner.insertAdjacentHTML('beforeend', `<option>${m.name}</option>`));
-      }
-    }
-    function renderTeamEditor(){
-      const box = document.getElementById('team-editor-list'); if(!box) return;
-      const members = loadMembers();
-      box.innerHTML = members.map((m,i)=>`<div class="team-editor-row" data-i="${i}"><input class="member-initial-input" maxlength="2" value="${m.initial || ''}" placeholder="ตัวย่อ"><input class="member-name-input" value="${m.name || ''}" placeholder="ชื่อ-นามสกุล"><button type="button" class="icon-btn btn-remove-member">×</button></div>`).join('');
-    }
-    function readEditorMembers(){
-      return Array.from(document.querySelectorAll('.team-editor-row')).map(row => ({initial: row.querySelector('.member-initial-input').value.trim().slice(0,2) || '•', name: row.querySelector('.member-name-input').value.trim()})).filter(m => m.name);
-    }
-    function renderTeamDashboard(){
-      const tasks = getTasksFromMainTable();
-      const counts = {pending:0, progress:0, done:0};
-      tasks.forEach(t => counts[statusType(t.status)]++);
-      const total = tasks.length, pct = total ? Math.round(counts.done / total * 100) : 0;
-      const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
-      set('team-total', total); set('team-pending', counts.pending); set('team-progress', counts.progress); set('team-done', counts.done); set('team-percent', pct+'%');
-      set('team-pending-text', counts.pending); set('team-progress-text', counts.progress); set('team-done-text', counts.done);
-      const members = loadMembers();
-      const summary = document.getElementById('team-member-summary');
-      if(summary){
-        summary.innerHTML = members.map(m => {
-          const mine = tasks.filter(t => norm(t.owner).includes(norm(m.name)) || norm(t.owner) === norm(m.initial));
-          const done = mine.filter(t => statusType(t.status)==='done').length;
-          const mpct = mine.length ? Math.round(done / mine.length * 100) : 0;
-          return `<div class="member-progress-item"><div class="member-avatar">${m.initial || '•'}</div><div><div class="member-name">${m.name}</div><div class="member-meta">${done}/${mine.length} งาน</div><div class="member-bar"><span style="width:${mpct}%"></span></div></div><div class="member-percent">${mpct}%</div></div>`;
-        }).join('') || '<div class="team-empty">ยังไม่มีรายชื่อทีมงาน</div>';
-      }
-      const tbody = document.getElementById('team-task-table');
-      if(tbody){
-        tbody.innerHTML = tasks.map(t=>`<tr><td>${t.title}</td><td>${t.owner}</td><td>${t.branch}</td><td>${t.risk}</td><td>${t.due}</td><td>${t.status}</td></tr>`).join('') || '<tr><td colspan="6" class="team-empty">ยังไม่มีรายการงาน</td></tr>';
-      }
-    }
-    function setup(){
-      fillOwnerList(); renderTeamEditor(); renderTeamDashboard();
-      document.getElementById('btn-open-team-modal')?.addEventListener('click',()=>{ renderTeamEditor(); document.getElementById('team-modal')?.classList.remove('hidden'); });
-      document.getElementById('btn-close-team-modal')?.addEventListener('click',()=>document.getElementById('team-modal')?.classList.add('hidden'));
-      document.getElementById('btn-add-member')?.addEventListener('click',()=>{ document.getElementById('team-editor-list')?.insertAdjacentHTML('beforeend','<div class="team-editor-row"><input class="member-initial-input" maxlength="2" placeholder="ตัวย่อ"><input class="member-name-input" placeholder="ชื่อ-นามสกุล"><button type="button" class="icon-btn btn-remove-member">×</button></div>'); });
-      document.getElementById('team-editor-list')?.addEventListener('click',e=>{ if(e.target.classList.contains('btn-remove-member')) e.target.closest('.team-editor-row').remove(); });
-      document.getElementById('team-form')?.addEventListener('submit',e=>{ e.preventDefault(); saveMembers(readEditorMembers()); fillOwnerList(); renderTeamDashboard(); document.getElementById('team-modal')?.classList.add('hidden'); });
-      const taskTable = document.getElementById('task-table');
-      if(taskTable) new MutationObserver(renderTeamDashboard).observe(taskTable,{childList:true,subtree:true,characterData:true});
-      document.addEventListener('click', e => { if(e.target?.matches('.nav,[data-view]')) setTimeout(renderTeamDashboard, 80); });
-      setInterval(renderTeamDashboard, 2000);
-    }
-    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
-  })();
-  </script>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
