@@ -684,3 +684,26 @@ canvas {
     grid-template-columns: 1fr;
   }
 }
+#pageDashboard .dashboard-panel {
+  min-height: auto !important;
+}
+
+#pageDashboard .dashboard-chart-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+}
+
+#pageDashboard .chart-card {
+  height: 320px !important;
+  min-height: 320px !important;
+  padding: 16px !important;
+  overflow: hidden !important;
+}
+
+#pageDashboard .chart-card canvas {
+  display: block !important;
+  height: 240px !important;
+  max-height: 240px !important;
+  width: 100% !important;
+}
