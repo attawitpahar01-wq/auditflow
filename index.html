@@ -55,9 +55,61 @@
           <div class="stat"><span>เกินกำหนด</span><strong id="stat-overdue">0</strong></div>
           <div class="stat"><span>เสร็จสิ้น</span><strong id="stat-done">0</strong></div>
         </div>
-        <div class="panel">
-          <h2>สรุปตามสาขา</h2>
-          <div id="branch-summary" class="branch-grid"></div>
+        <div class="executive-analytics-grid">
+          <div class="panel chart-panel executive-progress-panel">
+            <div class="panel-head-inline">
+              <div>
+                <h2>Overall Audit Progress</h2>
+                <p class="panel-subtitle">ภาพรวมความคืบหน้าของงานตรวจสอบทั้งหมด</p>
+              </div>
+              <span id="kpi-completion-rate" class="kpi-pill">0%</span>
+            </div>
+            <div class="chart-box donut-chart-box"><canvas id="chart-progress"></canvas></div>
+          </div>
+
+          <div class="panel chart-panel">
+            <div class="panel-head-inline">
+              <div>
+                <h2>Risk Distribution</h2>
+                <p class="panel-subtitle">สัดส่วนงานตามระดับความเสี่ยง</p>
+              </div>
+            </div>
+            <div class="chart-box donut-chart-box"><canvas id="chart-risk"></canvas></div>
+          </div>
+        </div>
+
+        <div class="executive-analytics-grid analytics-wide">
+          <div class="panel chart-panel">
+            <div class="panel-head-inline">
+              <div>
+                <h2>Status Overview</h2>
+                <p class="panel-subtitle">Stacked Bar แสดงสถานะงานตามสาขา</p>
+              </div>
+            </div>
+            <div class="chart-box bar-chart-box"><canvas id="chart-status-branch"></canvas></div>
+          </div>
+
+          <div class="panel chart-panel">
+            <div class="panel-head-inline">
+              <div>
+                <h2>Auditor Workload</h2>
+                <p class="panel-subtitle">ภาระงานและงานที่เสร็จของสมาชิกทีม</p>
+              </div>
+            </div>
+            <div class="chart-box bar-chart-box"><canvas id="chart-workload"></canvas></div>
+          </div>
+        </div>
+
+        <div class="executive-bottom-grid">
+          <div class="panel">
+            <h2>สรุปตามสาขา</h2>
+            <div id="branch-summary" class="branch-grid"></div>
+          </div>
+
+          <div class="panel insight-panel">
+            <h2>Audit Insight</h2>
+            <div id="audit-insights" class="insight-list"></div>
+          </div>
         </div>
       </section>
 
@@ -191,6 +243,7 @@
     </form>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script type="module" src="app.js"></script>
 
 
@@ -199,6 +252,9 @@
 
     /* Team Overview Dashboard - polished supervisor layout */
     .team-overview-view{padding-bottom:28px}.team-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.team-hero h1{font-size:30px;line-height:1.2;margin:0 0 6px;color:#f8fafc}.team-hero p{margin:0;color:#9ca3af}.team-hero-actions{display:flex;align-items:center;gap:12px}.supervisor-badge{display:flex;align-items:center;gap:10px;background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.22);border-radius:22px;padding:8px 16px;color:#f8fafc}.supervisor-badge span{width:38px;height:38px;border-radius:999px;display:grid;place-items:center;background:#6976ff;color:#111827;font-weight:900}.supervisor-badge small{color:#cbd5e1;font-size:13px}.team-stat-grid{grid-template-columns:repeat(4,minmax(190px,1fr));margin-bottom:20px}.team-stat-card{position:relative;min-height:90px;padding-left:86px;overflow:hidden}.team-stat-card:before{content:"";position:absolute;left:24px;top:24px;width:48px;height:48px;border-radius:14px;background:rgba(139,92,246,.18)}.team-stat-card:after{position:absolute;left:39px;top:32px;font-size:24px}.stat-total-card:after{content:"▣";color:#8b5cf6}.stat-pending-card:after{content:"◷";color:#3b82f6}.stat-progress-card:after{content:"⚠";color:#f59e0b;font-size:22px;top:34px}.stat-done-card:after{content:"✓";color:#10b981}.team-dashboard-grid{display:grid;grid-template-columns:430px 1fr;gap:24px;margin-bottom:24px}.team-progress-card-main{min-height:360px}.team-members-card{min-height:360px}.donut-wrap{display:flex;justify-content:center;padding:28px 0 22px}.donut-ring{width:172px;height:172px;border-radius:999px;background:conic-gradient(#22c55e var(--pct,0%),#263247 0);display:grid;place-items:center;position:relative}.donut-ring:before{content:"";position:absolute;inset:14px;border-radius:999px;background:#172235}.donut-ring #team-percent{position:relative;font-size:36px;font-weight:900;color:#f8fafc}.team-legend{display:grid;gap:10px;margin-top:8px}.team-legend p{margin:0;color:#cbd5e1;font-size:15px}.team-legend strong{color:#f8fafc}.dot{display:inline-block;width:12px;height:12px;border-radius:999px;margin-right:10px;vertical-align:middle;box-shadow:0 0 10px currentColor}.dot-blue{background:#3b82f6;color:#3b82f6}.dot-orange{background:#f59e0b;color:#f59e0b}.dot-green{background:#10b981;color:#10b981}.mini-filter{background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.16);border-radius:12px;color:#94a3b8;padding:7px 12px;font-size:12px}.compact-scroll{max-height:300px;overflow:auto;padding-right:10px}.compact-scroll::-webkit-scrollbar{width:8px}.compact-scroll::-webkit-scrollbar-track{background:#1f2a3d;border-radius:10px}.compact-scroll::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:10px}.member-progress-item{display:grid!important;grid-template-columns:48px 1fr 70px!important;gap:16px!important;align-items:center!important;margin:0!important;padding:14px 0!important;border-bottom:1px solid rgba(148,163,184,.08)}.member-progress-item:last-child{border-bottom:0}.member-avatar{width:44px!important;height:44px!important;border:2px solid #8b5cf6!important;border-radius:999px!important;background:rgba(139,92,246,.12)!important;color:#f8fafc!important}.member-name{font-size:16px!important;color:#f8fafc!important;margin-bottom:2px}.member-meta{font-size:13px!important;color:#a8b3c7!important}.member-bar{height:9px!important;background:#263247!important;margin-top:9px!important}.member-bar span{background:linear-gradient(90deg,#8b5cf6,#38bdf8,#22c55e)!important}.member-percent{font-size:16px!important;color:#10b981!important;font-weight:900!important}.team-table-card{margin-top:0}.table-head{align-items:flex-start}.team-tabs{display:flex;gap:4px;background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.16);border-radius:14px;padding:4px}.team-tabs button{border:0;background:transparent;color:#94a3b8;border-radius:10px;padding:9px 14px;font-family:inherit;cursor:default}.team-tabs button.active{background:#253044;color:#f8fafc}@media(max-width:1100px){.team-dashboard-grid{grid-template-columns:1fr}.team-stat-grid{grid-template-columns:repeat(2,1fr)}.team-hero{flex-direction:column;align-items:flex-start}}@media(max-width:720px){.team-stat-grid{grid-template-columns:1fr}.team-hero-actions{flex-wrap:wrap}.team-stat-card{padding-left:76px}.team-dashboard-grid{gap:16px}}
+
+  
+    .executive-analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}.analytics-wide{grid-template-columns:1.15fr .85fr}.executive-bottom-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:18px;margin-top:18px}.chart-panel{min-height:330px}.panel-subtitle{margin:4px 0 0;color:#94a3b8;font-size:13px}.kpi-pill{display:inline-flex;align-items:center;justify-content:center;min-width:72px;height:34px;padding:0 14px;border-radius:999px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#22c55e;font-weight:900}.chart-box{position:relative;width:100%;height:250px;margin-top:14px}.donut-chart-box{height:245px}.bar-chart-box{height:280px}.insight-list{display:grid;gap:12px;margin-top:12px}.insight-item{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border-radius:14px;background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.12)}.insight-icon{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:rgba(139,92,246,.18);color:#a78bfa;flex:0 0 auto}.insight-item strong{display:block;color:#f8fafc;margin-bottom:2px}.insight-item span{color:#9ca3af;font-size:13px}.mini-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}.mini-kpi{padding:14px;border-radius:16px;background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.12)}.mini-kpi span{display:block;color:#94a3b8;font-size:12px}.mini-kpi strong{display:block;color:#f8fafc;font-size:24px;margin-top:6px}@media(max-width:1200px){.executive-analytics-grid,.analytics-wide,.executive-bottom-grid{grid-template-columns:1fr}.chart-box{height:260px}}
 
   </style>
 

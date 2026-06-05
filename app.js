@@ -41,6 +41,10 @@ let tasks = [];
 let teamMembers = [];
 let demoMode = false;
 let teamSeedStarted = false;
+let chartProgress = null;
+let chartRisk = null;
+let chartStatusBranch = null;
+let chartWorkload = null;
 
 try {
   firebaseReady = firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("PASTE") && !firebaseConfig.apiKey.includes("...");
@@ -181,6 +185,7 @@ function statusLabel(key){return statuses.find(s=>s.key===key)?.label || key;}
 
 function render(){
   renderStats();
+  renderExecutiveAnalytics();
   renderTeamDashboard();
   renderKanban();
   renderTable();
@@ -198,6 +203,116 @@ function renderStats(){
     const done = list.filter(t=>t.status==="done").length;
     return `<div class="branch-item"><strong>${b.name}</strong><br><span>${list.length} งาน | เสร็จ ${done} งาน | Overdue ${list.filter(isOverdue).length}</span></div>`;
   }).join("");
+}
+
+
+function chartColors(){
+  return {
+    planning:"#3b82f6",
+    fieldwork:"#f59e0b",
+    review:"#a855f7",
+    done:"#10b981",
+    critical:"#ef4444",
+    high:"#f97316",
+    medium:"#facc15",
+    low:"#22c55e",
+    grid:"rgba(148,163,184,.14)",
+    text:"#cbd5e1"
+  };
+}
+
+function makeOrUpdateChart(existing, canvasId, config){
+  if (!has(canvasId) || typeof Chart === "undefined") return existing;
+  const ctx = $(canvasId);
+  if (existing) {
+    existing.data = config.data;
+    existing.options = config.options;
+    existing.update();
+    return existing;
+  }
+  return new Chart(ctx, config);
+}
+
+function renderExecutiveAnalytics(){
+  if (!has("chart-progress")) return;
+  const c = chartColors();
+  const total = tasks.length;
+  const planning = tasks.filter(t=>t.status === "planning").length;
+  const fieldwork = tasks.filter(t=>t.status === "fieldwork").length;
+  const review = tasks.filter(t=>t.status === "review").length;
+  const done = tasks.filter(t=>t.status === "done").length;
+  const open = Math.max(total - done, 0);
+  const completionPct = total ? Math.round(done / total * 100) : 0;
+  if (has("kpi-completion-rate")) $("kpi-completion-rate").textContent = completionPct + "%";
+
+  const baseOptions = {
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{
+      legend:{labels:{color:c.text, font:{family:"Sarabun"}}},
+      tooltip:{titleFont:{family:"Sarabun"}, bodyFont:{family:"Sarabun"}}
+    }
+  };
+
+  chartProgress = makeOrUpdateChart(chartProgress, "chart-progress", {
+    type:"doughnut",
+    data:{
+      labels:["เสร็จสิ้น", "คงเหลือ"],
+      datasets:[{data:[done, open], backgroundColor:[c.done,"#263247"], borderWidth:0, cutout:"72%"}]
+    },
+    options:{...baseOptions, plugins:{...baseOptions.plugins, legend:{position:"bottom", labels:{color:c.text, font:{family:"Sarabun"}}}}}
+  });
+
+  const riskLabels = ["Critical", "High", "Medium", "Low"];
+  const riskData = riskLabels.map(r => tasks.filter(t => t.risk === r).length);
+  chartRisk = makeOrUpdateChart(chartRisk, "chart-risk", {
+    type:"doughnut",
+    data:{labels:riskLabels, datasets:[{data:riskData, backgroundColor:[c.critical,c.high,c.medium,c.low], borderWidth:0, cutout:"62%"}]},
+    options:{...baseOptions, plugins:{...baseOptions.plugins, legend:{position:"bottom", labels:{color:c.text, font:{family:"Sarabun"}}}}}
+  });
+
+  chartStatusBranch = makeOrUpdateChart(chartStatusBranch, "chart-status-branch", {
+    type:"bar",
+    data:{
+      labels:branches.map(b=>b.code),
+      datasets:[
+        {label:"Planning", data:branches.map(b=>tasks.filter(t=>t.branch===b.code && t.status==="planning").length), backgroundColor:c.planning},
+        {label:"Fieldwork", data:branches.map(b=>tasks.filter(t=>t.branch===b.code && t.status==="fieldwork").length), backgroundColor:c.fieldwork},
+        {label:"Review", data:branches.map(b=>tasks.filter(t=>t.branch===b.code && t.status==="review").length), backgroundColor:c.review},
+        {label:"Done", data:branches.map(b=>tasks.filter(t=>t.branch===b.code && t.status==="done").length), backgroundColor:c.done}
+      ]
+    },
+    options:{...baseOptions, scales:{x:{stacked:true, ticks:{color:c.text, font:{family:"Sarabun"}}, grid:{color:c.grid}}, y:{stacked:true, beginAtZero:true, ticks:{color:c.text, precision:0, font:{family:"Sarabun"}}, grid:{color:c.grid}}}}
+  });
+
+  const members = activeTeam();
+  chartWorkload = makeOrUpdateChart(chartWorkload, "chart-workload", {
+    type:"bar",
+    data:{
+      labels:members.map(m=>m.name.split(" ")[0]),
+      datasets:[
+        {label:"งานทั้งหมด", data:members.map(m=>tasks.filter(t=>ownerIdForTask(t)===m.id).length), backgroundColor:"#60a5fa"},
+        {label:"เสร็จสิ้น", data:members.map(m=>tasks.filter(t=>ownerIdForTask(t)===m.id && t.status==="done").length), backgroundColor:c.done}
+      ]
+    },
+    options:{...baseOptions, indexAxis:"y", scales:{x:{beginAtZero:true, ticks:{color:c.text, precision:0, font:{family:"Sarabun"}}, grid:{color:c.grid}}, y:{ticks:{color:c.text, font:{family:"Sarabun"}}, grid:{color:c.grid}}}}
+  });
+
+  if (has("audit-insights")) {
+    const overdue = tasks.filter(isOverdue).length;
+    const highOpen = tasks.filter(t=>["High","Critical"].includes(t.risk) && t.status!=="done").length;
+    const busiest = members.map(m=>({m, n:tasks.filter(t=>ownerIdForTask(t)===m.id && t.status!=="done").length})).sort((a,b)=>b.n-a.n)[0];
+    $("audit-insights").innerHTML = `
+      <div class="mini-kpi-grid">
+        <div class="mini-kpi"><span>Completion</span><strong>${completionPct}%</strong></div>
+        <div class="mini-kpi"><span>Open</span><strong>${open}</strong></div>
+        <div class="mini-kpi"><span>Overdue</span><strong>${overdue}</strong></div>
+        <div class="mini-kpi"><span>High Risk Open</span><strong>${highOpen}</strong></div>
+      </div>
+      <div class="insight-item"><div class="insight-icon">✓</div><div><strong>งานเสร็จสิ้น ${done}/${total} งาน</strong><span>Completion Rate ปัจจุบัน ${completionPct}%</span></div></div>
+      <div class="insight-item"><div class="insight-icon">⚠</div><div><strong>งานความเสี่ยงสูงที่ยังเปิดอยู่ ${highOpen} งาน</strong><span>ควรติดตามสถานะและกำหนดเจ้าของงานให้ชัดเจน</span></div></div>
+      <div class="insight-item"><div class="insight-icon">👥</div><div><strong>ภาระงานเปิดสูงสุด: ${escapeHtml(busiest?.m?.name || "-")}</strong><span>${busiest?.n || 0} งานที่ยังไม่เสร็จ</span></div></div>`;
+  }
 }
 
 function renderTeamDashboard(){
