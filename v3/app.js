@@ -208,7 +208,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
       document.getElementById("openFinding").innerText = open;
       document.getElementById("overdueFinding").innerText = overdue;
       renderRiskHeatmap();
-      renderExecutiveDashboard();
+      // renderExecutiveDashboard();
       renderCharts();
       renderTeamDashboard();
       renderKanban();
@@ -328,36 +328,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
  html += "</div>";
  container.innerHTML = html;
 }
-    // Executive Dashboard
+// Executive Dashboard
 function renderExecutiveDashboard() {
-
- const total = findings.length;
-
- const closed =
- findings.filter(f => f.status === "Closed").length;
-
-
- const completionRate =
- total === 0 ? 0 :
- Math.round((closed / total) * 100);
-
-
- const highRiskOpen =
- findings.filter(f =>
- f.riskLevel === "High" &&
- f.status !== "Closed"
- ).length;
-const overdueHighRisk = findings.filter(f => f.riskLevel === "High" && isOverdue(f.dueDate, f.status)).length;
-const branches = [...new Set(findings.map(f => f.branch))];
-document.getElementById("completionRate").innerText = completionRate + "%";
-document.getElementById("highRiskOpen").innerText = highRiskOpen;
-document.getElementById("overdueHighRisk").innerText = overdueHighRisk;
-document.getElementById("totalBranch").innerText = branches.length;
-renderBarChart("branchChart",countBy("branch"));
-renderBarChart("riskChart",countBy("riskLevel"));
-renderBarChart("statusChart",countBy("status"));
-renderBarChart("mapStatusChart",countBy("mapStatus"));
-renderBarChart("ownerChart",countOpenByOwner());}
+  // Disabled old text dashboard
+  // Dashboard now uses Chart.js only
+}
     
 function countBy(field) {
  const result = {};
