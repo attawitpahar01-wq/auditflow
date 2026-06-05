@@ -601,11 +601,11 @@ function renderKanban() {
   });
 }
 /* =====================================================
-   Step 8.4 Fix Sidebar Navigation Click
+   Step 8.4 Fix Sidebar Navigation Click - Correct Page ID
 ===================================================== */
 
 function showPage(pageId) {
-  document.querySelectorAll(".page, section").forEach(page => {
+  document.querySelectorAll(".page-section").forEach(page => {
     page.style.display = "none";
   });
 
@@ -614,37 +614,19 @@ function showPage(pageId) {
     target.style.display = "block";
   }
 
-  document.querySelectorAll(".nav-btn, .sidebar button").forEach(btn => {
+  document.querySelectorAll(".sidebar button").forEach(btn => {
     btn.classList.remove("active");
   });
+
+  const activeBtn = document.querySelector(
+    `.sidebar button[onclick="showPage('${pageId}')"]`
+  );
+
+  if (activeBtn) {
+    activeBtn.classList.add("active");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const menuMap = [
-    ["Dashboard", "dashboardPage"],
-    ["Team Dashboard", "teamDashboardPage"],
-    ["Kanban Board", "kanbanPage"],
-    ["Finding Register", "registerPage"],
-    ["Add / Edit Finding", "formPage"],
-    ["Action Plan", "actionPlanPage"],
-    ["Risk Heatmap", "riskHeatmapPage"],
-    ["Evidence", "evidencePage"],
-    ["Report", "reportPage"],
-    ["Setting", "settingPage"]
-  ];
-
-  document.querySelectorAll(".sidebar button, .nav-btn").forEach(btn => {
-    btn.onclick = () => {
-      const text = btn.innerText.trim();
-
-      const found = menuMap.find(item => text.includes(item[0]));
-
-      if (found) {
-        showPage(found[1]);
-        btn.classList.add("active");
-      }
-    };
-  });
-
-  showPage("dashboardPage");
+  showPage("pageDashboard");
 });
