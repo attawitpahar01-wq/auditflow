@@ -528,3 +528,51 @@ canvas {
     grid-template-columns: 1fr !important;
   }
 }
+/* =====================================================
+   Step 8.3 Risk Heatmap 5x5 Fix
+===================================================== */
+
+.heatmap-grid {
+  display: grid !important;
+  grid-template-columns: 90px repeat(5, 1fr);
+  gap: 6px;
+  margin-top: 16px;
+  max-width: 720px;
+}
+
+.heatmap-cell,
+.heat-cell {
+  min-height: 58px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+  color: #fff;
+  background: #1e293b;
+}
+
+.heatmap-label {
+  background: #020617 !important;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.risk-low-cell {
+  background: #166534 !important;
+}
+
+.risk-medium-cell {
+  background: #ca8a04 !important;
+}
+
+.risk-high-cell {
+  background: #dc2626 !important;
+}
+
+.risk-critical-cell {
+  background: #7f1d1d !important;
+}
