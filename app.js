@@ -100,7 +100,7 @@ function seedTasks(){
 
 function activeTeam(){
   const list = teamMembers.length ? teamMembers : defaultTeamMembers;
-  return list.filter(m => m.active !== false).sort((a,b)=>(a.name||"").localeCompare(b.name||"", "th"));
+  return list.filter(m => m && m.active !== false && m.active !== "false" && m.active !== 0).sort((a,b)=>(a.name||"").localeCompare(b.name||"", "th"));
 }
 
 function findMemberByOwner(owner, ownerId){
@@ -336,7 +336,12 @@ function renderTeamDashboard(){
   $("team-progress-text").textContent = progress;
   $("team-done-text").textContent = done;
 
-  const rows = activeTeam().map(member => {
+  let membersForDashboard = activeTeam();
+  if (!membersForDashboard.length) {
+    membersForDashboard = defaultTeamMembers.map(m => ({...m, active:true}));
+    if (!teamMembers.length) teamMembers = membersForDashboard;
+  }
+  const rows = membersForDashboard.map(member => {
     const list = tasks.filter(t => ownerIdForTask(t) === member.id);
     const memberDone = list.filter(t => t.status === "done").length;
     const memberPct = list.length ? Math.round(memberDone / list.length * 100) : 0;
