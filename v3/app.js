@@ -397,16 +397,6 @@ function renderBarChart(id, data) {
 
   return result;
 }
-    window.showPage = function(pageId) {
-  document.querySelectorAll(".page-section").forEach(section => {
-    section.classList.add("hidden");
-  });
-
-  const page = document.getElementById(pageId);
-  if (page) {
-    page.classList.remove("hidden");
-  }
-};
 let chartProgressObj, chartRiskObj, chartBranchObj, chartWorkloadObj;
 
 function renderCharts() {
@@ -629,4 +619,35 @@ function showPage(pageId) {
 
 document.addEventListener("DOMContentLoaded", () => {
   showPage("pageDashboard");
+});
+window.showPage = function (pageId) {
+
+  document.querySelectorAll(".page-section").forEach(page => {
+    page.style.display = "none";
+  });
+
+
+  const target = document.getElementById(pageId);
+
+  if(target){
+    target.style.display = "block";
+  }
+
+
+  document.querySelectorAll(".sidebar button").forEach(btn=>{
+    btn.classList.remove("active");
+
+    let click = btn.getAttribute("onclick") || "";
+
+    if(click.includes(pageId)){
+      btn.classList.add("active");
+    }
+
+  });
+
+};
+
+
+document.addEventListener("DOMContentLoaded",()=>{
+   showPage("pageDashboard");
 });
