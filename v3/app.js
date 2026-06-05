@@ -590,33 +590,56 @@ function renderKanban() {
     `;
   });
 }
-/* =====================================================
-   Step 8.4 Fix Sidebar Navigation Click - Correct Page ID
-===================================================== */
+/* ======================================
+   AuditFlow V3 Final Page Navigation
+====================================== */
+
 window.showPage = function(pageId) {
-  document.querySelectorAll(".page-section").forEach(page => {
-    page.classList.add("hidden");
-    page.style.display = "none";
-  });
 
-  const target = document.getElementById(pageId);
-  if (target) {
-    target.classList.remove("hidden");
-    target.style.display = "block";
-  }
+    // ซ่อนทุกหน้า
+    document.querySelectorAll(".page-section").forEach(page => {
 
-  document.querySelectorAll(".sidebar button").forEach(btn => {
-    btn.classList.remove("active");
+        page.classList.remove("active-page");
+        page.style.display = "none";
 
-    const click = btn.getAttribute("onclick") || "";
-    if (click.includes(pageId)) {
-      btn.classList.add("active");
+    });
+
+
+    // เปิดหน้าที่เลือก
+    const target = document.getElementById(pageId);
+
+    if (target) {
+
+        target.classList.add("active-page");
+        target.style.display = "block";
+
     }
-  });
 
-  window.scrollTo(0, 0);
+
+    // active menu
+    document.querySelectorAll(".sidebar button").forEach(btn => {
+
+        btn.classList.remove("active");
+
+        const click = btn.getAttribute("onclick") || "";
+
+        if (click.includes(pageId)) {
+
+            btn.classList.add("active");
+
+        }
+
+    });
+
+
+    window.scrollTo(0,0);
+
 };
 
+
+/* หน้าแรก */
 document.addEventListener("DOMContentLoaded", () => {
-  showPage("pageDashboard");
+
+    showPage("pageDashboard");
+
 });
