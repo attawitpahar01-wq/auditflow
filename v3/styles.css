@@ -356,122 +356,175 @@ button:hover,
    Step 8.1 Fix Chart.js Oversize
    AuditFlow V3 Compact Executive Dashboard
 ===================================================== */
-
-
 /* Executive Analytics Container */
 .analytics-section,
 .dashboard-section,
 .chart-section {
     margin-top: 20px;
     padding: 20px;
-
     background: #0f172a;
     border-radius: 18px;
     border: 1px solid #334155;
-
     max-width: 100%;
 }
-
-
 /* Chart Layout */
 .chart-grid,
 .charts-grid,
 #dashboardCharts {
     display: grid;
-
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
-
     align-items: stretch;
 }
-
-
 /* Individual Chart Card */
 .chart-card,
 .chart-box {
-
     background: #111827;
-
     border-radius: 16px;
     border: 1px solid #334155;
-
     padding: 16px;
-
     height: 330px !important;
-
     overflow: hidden;
 }
-
-
 /* Force Chart.js Size */
 canvas {
-
     max-height: 260px !important;
     height: 260px !important;
-
     width: 100% !important;
-
 }
-
-
 /* Donut / Pie Fix */
 canvas[id*="Chart"],
 canvas[id*="chart"] {
-
     max-width: 100%;
 }
-
-
 /* KPI Cards Fix */
 .kpi-grid,
 .summary-cards {
-
     display:grid;
-
     grid-template-columns: repeat(4,1fr);
-
     gap:15px;
-
 }
-
-
 .kpi-card,
 .summary-card {
-
     height:100px;
-
     display:flex;
     flex-direction:column;
     justify-content:center;
-
 }
-
-
 /* Dashboard spacing */
 main {
-
     padding:24px;
-
 }
-
-
 /* Mobile */
 @media(max-width:900px){
-
 .chart-grid,
 .charts-grid,
 #dashboardCharts {
-
 grid-template-columns:1fr;
-
 }
-
-
 .kpi-grid,
 .summary-cards{
-
 grid-template-columns:repeat(2,1fr);
-
 }
-
+}
+/* =====================================================
+   Step 8.2 Fix Layout + Sidebar Clickable
+===================================================== */
+body {
+  margin: 0;
+  background: #0f172a;
+  overflow-x: hidden;
+}
+/* Sidebar fixed */
+.sidebar {
+  position: fixed !important;
+  top: 64px;
+  left: 0;
+  bottom: 0;
+  width: 270px !important;
+  height: calc(100vh - 64px) !important;
+  background: #020617;
+  border-right: 1px solid #334155;
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+  overflow-y: auto;
+}
+/* ทำให้ปุ่มกดได้ */
+.sidebar button,
+.sidebar a,
+.nav-btn {
+  position: relative;
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+}
+/* Main content ต้องเริ่มหลัง Sidebar */
+main,
+.content,
+.dashboard-content,
+#mainContent,
+#appContent {
+  margin-left: 270px !important;
+  padding: 24px !important;
+  width: calc(100% - 270px) !important;
+  min-height: calc(100vh - 64px);
+  position: relative;
+  z-index: 1;
+}
+/* กัน content ไหลลงใต้ sidebar */
+.app,
+.container,
+.main-layout {
+  display: block !important;
+}
+/* KPI ให้เรียง 4 ช่อง */
+.kpi-grid,
+.summary-cards,
+.dashboard-cards {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 16px !important;
+}
+/* Chart compact */
+.chart-grid,
+.charts-grid,
+#dashboardCharts {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 18px !important;
+}
+.chart-card,
+.chart-box {
+  height: 320px !important;
+  overflow: hidden !important;
+}
+.chart-card canvas,
+.chart-box canvas,
+canvas {
+  height: 240px !important;
+  max-height: 240px !important;
+}
+/* Mobile */
+@media (max-width: 900px) {
+  .sidebar {
+    position: relative !important;
+    top: 0;
+    width: 100% !important;
+    height: auto !important;
+  }
+  main,
+  .content,
+  .dashboard-content,
+  #mainContent,
+  #appContent {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  .kpi-grid,
+  .summary-cards,
+  .dashboard-cards,
+  .chart-grid,
+  .charts-grid,
+  #dashboardCharts {
+    grid-template-columns: 1fr !important;
+  }
 }
