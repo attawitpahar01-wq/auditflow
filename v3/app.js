@@ -209,6 +209,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
       document.getElementById("overdueFinding").innerText = overdue;
       renderRiskHeatmap();
       renderExecutiveDashboard();
+      renderCharts();
     }
 
     function calculateAging(dueDate, status) {
@@ -404,3 +405,82 @@ function renderBarChart(id, data) {
     page.classList.remove("hidden");
   }
 };
+let chartProgressObj, chartRiskObj, chartBranchObj, chartWorkloadObj;
+
+function renderCharts() {
+  renderProgressChart();
+  renderRiskChart();
+  renderBranchChart();
+  renderWorkloadChart();
+}
+
+function createOrUpdateChart(canvasId, config, chartObjName) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return null;
+
+  if (window[chartObjName]) {
+    window[chartObjName].destroy();
+  }
+
+  window[chartObjName] = new Chart(ctx, config);
+}
+
+function renderProgressChart() {
+  const total = findings.length;
+  const closed = findings.filter(f => f.status === "Closed").length;
+  const open = total - closed;
+
+  createOrUpdateChart("chartProgress", {
+    type: "doughnut",
+    data: {
+      labels: ["Closed", "Open"],
+      datasets: [{
+        data: [closed, open]
+      }]
+    }
+  }, "chartProgressObj");
+}
+
+function renderRiskChart() {
+  const data = countBy("riskLevel");
+
+  createOrUpdateChart("chartRisk", {
+    type: "doughnut",
+    data: {
+      labels: Object.keys(data),
+      datasets: [{
+        data: Object.values(data)
+      }]
+    }
+  }, "chartRiskObj");
+}
+
+function renderBranchChart() {
+  const data = countBy("branch");
+
+  createOrUpdateChart("chartBranch", {
+    type: "bar",
+    data: {
+      labels: Object.keys(data),
+      datasets: [{
+        label: "Finding",
+        data: Object.values(data)
+      }]
+    }
+  }, "chartBranchObj");
+}
+
+function renderWorkloadChart() {
+  const data = countOpenByOwner();
+
+  createOrUpdateChart("chartWorkload", {
+    type: "bar",
+    data: {
+      labels: Object.keys(data),
+      datasets: [{
+        label: "Open Action",
+        data: Object.values(data)
+      }]
+    }
+  }, "chartWorkloadObj");
+}
