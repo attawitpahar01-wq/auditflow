@@ -576,3 +576,26 @@ canvas {
 .risk-critical-cell {
   background: #7f1d1d !important;
 }
+/* Fix actual main content class */
+.main-content {
+  margin-left: 270px !important;
+  padding: 24px !important;
+  width: calc(100% - 270px) !important;
+  min-height: calc(100vh - 64px);
+}
+
+/* Fix page display */
+.page-section {
+  display: none;
+}
+
+#pageDashboard {
+  display: block;
+}
+
+/* Sidebar button active */
+.sidebar button.active {
+  background: #1e293b !important;
+  color: #ffffff !important;
+  border: 1px solid #334155 !important;
+}
