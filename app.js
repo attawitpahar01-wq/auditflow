@@ -75,10 +75,10 @@ const defaultTeamMembers = [
 ];
 
 const statuses = [
-  { key:"planning", label:"Planning" },
-  { key:"fieldwork", label:"Fieldwork" },
-  { key:"review", label:"Review" },
-  { key:"done", label:"Done" }
+  { key:"planning", label:"รอดำเนินการ" },
+  { key:"fieldwork", label:"กำลังดำเนินการ" },
+  { key:"review", label:"รอตรวจทาน" },
+  { key:"done", label:"เสร็จสิ้น" }
 ];
 
 const $ = id => document.getElementById(id);
@@ -213,6 +213,8 @@ function renderTeamDashboard(){
   $("team-progress").textContent = progress;
   $("team-done").textContent = done;
   $("team-percent").textContent = pct + "%";
+  const donut = $("team-percent")?.closest(".donut-ring");
+  if (donut) donut.style.setProperty("--pct", pct + "%");
   $("team-pending-text").textContent = pending;
   $("team-progress-text").textContent = progress;
   $("team-done-text").textContent = done;
