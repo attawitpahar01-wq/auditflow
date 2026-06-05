@@ -160,7 +160,8 @@ function fillOptions(){
 }
 
 function refreshTeamOptions(){
-  const options = activeTeam().map(m=>`<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}${m.role ? " — " + escapeHtml(m.role) : ""}</option>`).join("");
+  const members = activeTeam();
+  const options = members.map(m=>`<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}${m.role ? " — " + escapeHtml(m.role) : ""}</option>`).join("");
   if (has("filter-owner")) $("filter-owner").innerHTML = `<option value="all">ทุกคน</option>` + options;
 
   const current = has("task-owner") ? $("task-owner") : null;
@@ -171,10 +172,11 @@ function refreshTeamOptions(){
     current.replaceWith(select);
   }
   if (has("task-owner")) {
-    $("task-owner").innerHTML = `<option value="">เลือกผู้รับผิดชอบ</option>` + options;
+    $("task-owner").innerHTML = `<option value="" disabled>เลือกผู้รับผิดชอบ</option>` + options;
+    if (!$("task-owner").value && members[0]) $("task-owner").value = members[0].id;
   }
   if (has("team-owner-list")) {
-    $("team-owner-list").innerHTML = activeTeam().map(m=>`<option value="${escapeHtml(m.name)}"></option>`).join("");
+    $("team-owner-list").innerHTML = members.map(m=>`<option value="${escapeHtml(m.name)}"></option>`).join("");
   }
 }
 
@@ -421,8 +423,9 @@ function openModal(t=null){
   $("task-desc").value = t?.desc || "";
   $("task-branch").value = t?.branch || "SPR";
   refreshTeamOptions();
-  const member = findMemberByOwner(t?.owner, t?.ownerId);
-  $("task-owner").value = member?.id || activeTeam()[0]?.id || "";
+  const members = activeTeam();
+  const member = findMemberByOwner(t?.owner || t?.ownerName, t?.ownerId);
+  $("task-owner").value = member?.id || members[0]?.id || "";
   $("task-risk").value = t?.risk || "Medium";
   $("task-status").value = t?.status || "planning";
   $("task-due").value = t?.due || "";
@@ -445,17 +448,27 @@ function buildEvidence(existing){
 
 async function saveTask(e){
   e.preventDefault();
+  const members = activeTeam();
+  const selectedMember = members.find(m => m.id === $("task-owner").value) || members[0] || null;
+  if (!selectedMember) {
+    alert("ยังไม่มีรายชื่อทีมงาน กรุณาเพิ่มสมาชิกทีมก่อนสร้างงาน");
+    openTeamModal();
+    return;
+  }
+  if (!$("task-title").value.trim()) {
+    alert("กรุณาระบุชื่องาน");
+    return;
+  }
   const id = $("task-id").value || crypto.randomUUID();
   const existing = tasks.find(t => t.id === id);
-  const selectedMember = activeTeam().find(m => m.id === $("task-owner").value) || null;
   const task = {
     id,
     title: $("task-title").value.trim(),
     desc: $("task-desc").value.trim(),
     branch: $("task-branch").value,
-    ownerId: selectedMember?.id || "",
-    owner: selectedMember?.name || $("task-owner").value,
-    ownerName: selectedMember?.name || $("task-owner").value,
+    ownerId: selectedMember.id,
+    owner: selectedMember.name,
+    ownerName: selectedMember.name,
     risk: $("task-risk").value,
     status: $("task-status").value,
     due: $("task-due").value,
@@ -465,15 +478,20 @@ async function saveTask(e){
     updatedAtText: new Date().toISOString()
   };
 
-  if (firebaseReady && currentUser && !demoMode) {
-    await setDoc(doc(db,"tasks",id), {...task, updatedAt: serverTimestamp()}, { merge: true });
-    showToast("บันทึกงานบน Firestore แล้ว");
-  } else {
-    tasks = existing ? tasks.map(t=>t.id===id?task:t) : [task, ...tasks];
-    localSave();
-    showToast("บันทึกงานใน Demo/localStorage แล้ว");
+  try {
+    if (firebaseReady && currentUser && !demoMode) {
+      await setDoc(doc(db,"tasks",id), {...task, updatedAt: serverTimestamp()}, { merge: true });
+      showToast("บันทึกงานบน Firestore แล้ว");
+    } else {
+      tasks = existing ? tasks.map(t=>t.id===id?task:t) : [task, ...tasks];
+      localSave();
+      showToast("บันทึกงานใน Demo/localStorage แล้ว");
+    }
+    closeModal();
+  } catch (error) {
+    console.error("Save task error:", error);
+    alert("บันทึกงานไม่สำเร็จ: " + (error.message || error));
   }
-  closeModal();
 }
 
 async function deleteTask(){
@@ -498,53 +516,103 @@ function closeTeamModal(){
   $("team-modal").classList.add("hidden");
 }
 function renderTeamEditor(){
-  const list = teamMembers.length ? teamMembers : defaultTeamMembers;
-  $("team-editor-list").innerHTML = list.map(m => teamEditorRow(m)).join("");
+  const source = teamMembers.length ? teamMembers : defaultTeamMembers;
+  const list = source.length ? source : [{id:crypto.randomUUID(), avatar:"", name:"", role:"Auditor", active:true}];
+  $("team-editor-list").innerHTML = `
+    <div class="team-editor-header"><span>ชื่อย่อ</span><span>ชื่อ-นามสกุล</span><span>ตำแหน่ง</span><span>สถานะ</span><span></span></div>
+    ${list.map(m => teamEditorRow(m)).join("")}
+    <div class="team-editor-hint">หมายเหตุ: ชื่อย่อใช้แสดงเป็น Avatar วงกลม ส่วนตำแหน่งใช้แสดงใน Dashboard และช่องผู้รับผิดชอบ</div>
+  `;
 }
 function teamEditorRow(m={}){
-  return `<div class="team-editor-row" data-member-id="${escapeHtml(m.id || crypto.randomUUID())}" style="grid-template-columns:70px 1.3fr 1fr 90px 44px;">
-    <input class="team-avatar-input" value="${escapeHtml(m.avatar || "")}" placeholder="อักษร" />
+  const id = m.id || crypto.randomUUID();
+  const role = m.role || "Auditor";
+  const roleOptions = ["Manager", "Supervisor", "Senior Auditor", "Auditor", "Trainee"]
+    .map(r => `<option value="${r}" ${r===role ? "selected" : ""}>${r}</option>`).join("");
+  return `<div class="team-editor-row" data-member-id="${escapeHtml(id)}" style="grid-template-columns:70px 1.3fr 1fr 90px 44px;">
+    <input class="team-avatar-input" value="${escapeHtml(m.avatar || "")}" placeholder="เช่น N" maxlength="2" />
     <input class="team-name-input" value="${escapeHtml(m.name || "")}" placeholder="ชื่อ-นามสกุล" />
-    <input class="team-role-input" value="${escapeHtml(m.role || "Auditor")}" placeholder="ตำแหน่ง" />
+    <select class="team-role-input">${roleOptions}</select>
     <label style="display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:13px"><input class="team-active-input" type="checkbox" ${m.active !== false ? "checked" : ""}/> ใช้งาน</label>
     <button type="button" class="icon-btn" onclick="this.closest('.team-editor-row').remove()">×</button>
   </div>`;
 }
 function addTeamMemberRow(){
-  $("team-editor-list").insertAdjacentHTML("beforeend", teamEditorRow({id:crypto.randomUUID(), avatar:"", name:"", role:"Auditor", active:true}));
+  if (!has("team-editor-list")) return;
+  const html = teamEditorRow({id:crypto.randomUUID(), avatar:"", name:"", role:"Auditor", active:true});
+  const hint = $("team-editor-list").querySelector(".team-editor-hint");
+  if (hint) hint.insertAdjacentHTML("beforebegin", html);
+  else $("team-editor-list").insertAdjacentHTML("beforeend", html);
+}
+async function resetTeamMembers(){
+  if (!confirm("ต้องการรีเซ็ตทีมงานกลับเป็นค่าเริ่มต้นใช่หรือไม่?")) return;
+  const resetTeam = defaultTeamMembers.map(m => ({...m}));
+  try {
+    if (firebaseReady && currentUser && !demoMode) {
+      const oldIds = teamMembers.map(m => m.id);
+      const resetIds = resetTeam.map(m => m.id);
+      await Promise.all([
+        ...resetTeam.map(m => setDoc(doc(db,"teamMembers",m.id), {...m, updatedBy: currentUser.email, updatedAt: serverTimestamp()}, { merge: true })),
+        ...oldIds.filter(id => !resetIds.includes(id)).map(id => deleteDoc(doc(db,"teamMembers",id)))
+      ]);
+    } else {
+      teamMembers = resetTeam;
+      localSaveTeam();
+    }
+    teamMembers = resetTeam;
+    refreshTeamOptions();
+    renderTeamEditor();
+    render();
+    showToast("รีเซ็ตทีมงานแล้ว");
+  } catch (error) {
+    console.error("Reset team error:", error);
+    alert("รีเซ็ตทีมงานไม่สำเร็จ: " + (error.message || error));
+  }
 }
 
 async function saveTeamMembers(e){
   e.preventDefault();
   const rows = [...document.querySelectorAll(".team-editor-row")];
-  const newTeam = rows.map(row => ({
-    id: row.dataset.memberId || crypto.randomUUID(),
-    avatar: row.querySelector(".team-avatar-input")?.value.trim() || row.querySelector(".team-name-input")?.value.trim()?.[0] || "?",
-    name: row.querySelector(".team-name-input")?.value.trim(),
-    role: row.querySelector(".team-role-input")?.value.trim() || "Auditor",
-    active: row.querySelector(".team-active-input")?.checked !== false,
-    aliases: []
-  })).filter(m => m.name);
+  const newTeam = rows.map(row => {
+    const name = row.querySelector(".team-name-input")?.value.trim() || "";
+    return {
+      id: row.dataset.memberId || crypto.randomUUID(),
+      avatar: row.querySelector(".team-avatar-input")?.value.trim() || name?.[0] || "?",
+      name,
+      role: row.querySelector(".team-role-input")?.value.trim() || "Auditor",
+      active: row.querySelector(".team-active-input")?.checked !== false,
+      aliases: []
+    };
+  }).filter(m => m.name);
 
   if (!newTeam.length) {
-    alert("กรุณาระบุชื่อทีมงานอย่างน้อย 1 คน");
+    alert("กรุณาระบุชื่อทีมงานอย่างน้อย 1 คน หรือกดปุ่ม รีเซ็ตทีมเริ่มต้น");
+    addTeamMemberRow();
     return;
   }
 
-  if (firebaseReady && currentUser && !demoMode) {
-    const oldIds = teamMembers.map(m => m.id);
-    const newIds = newTeam.map(m => m.id);
-    await Promise.all([
-      ...newTeam.map(m => setDoc(doc(db,"teamMembers",m.id), {...m, updatedBy: currentUser.email, updatedAt: serverTimestamp()}, { merge: true })),
-      ...oldIds.filter(id => !newIds.includes(id)).map(id => deleteDoc(doc(db,"teamMembers",id)))
-    ]);
-    showToast("บันทึกทีมงานบน Firestore แล้ว");
-  } else {
-    teamMembers = newTeam;
-    localSaveTeam();
-    showToast("บันทึกทีมงานใน Demo/localStorage แล้ว");
+  try {
+    if (firebaseReady && currentUser && !demoMode) {
+      const oldIds = teamMembers.map(m => m.id);
+      const newIds = newTeam.map(m => m.id);
+      await Promise.all([
+        ...newTeam.map(m => setDoc(doc(db,"teamMembers",m.id), {...m, updatedBy: currentUser.email, updatedAt: serverTimestamp()}, { merge: true })),
+        ...oldIds.filter(id => !newIds.includes(id)).map(id => deleteDoc(doc(db,"teamMembers",id)))
+      ]);
+      teamMembers = newTeam;
+      showToast("บันทึกทีมงานบน Firestore แล้ว");
+    } else {
+      teamMembers = newTeam;
+      localSaveTeam();
+      showToast("บันทึกทีมงานใน Demo/localStorage แล้ว");
+    }
+    refreshTeamOptions();
+    render();
+    closeTeamModal();
+  } catch (error) {
+    console.error("Save team error:", error);
+    alert("บันทึกทีมงานไม่สำเร็จ: " + (error.message || error));
   }
-  closeTeamModal();
 }
 
 async function seedTeamToFirestore(){
@@ -599,7 +667,7 @@ function subscribeFirestore(user){
   unsubscribeTeam = onSnapshot(collection(db,"teamMembers"), snap => {
     teamMembers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (!teamMembers.length) {
-      teamMembers = defaultTeamMembers;
+      teamMembers = defaultTeamMembers.map(m => ({...m}));
       seedTeamToFirestore();
     }
     refreshTeamOptions();
@@ -640,6 +708,7 @@ function bind(){
   if (has("btn-open-team-modal")) $("btn-open-team-modal").onclick = openTeamModal;
   if (has("btn-close-team-modal")) $("btn-close-team-modal").onclick = closeTeamModal;
   if (has("btn-add-member")) $("btn-add-member").onclick = addTeamMemberRow;
+  if (has("btn-reset-team")) $("btn-reset-team").onclick = resetTeamMembers;
   if (has("team-form")) $("team-form").onsubmit = saveTeamMembers;
   window.editTask = id => openModal(tasks.find(t=>t.id===id));
 }
