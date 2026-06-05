@@ -400,16 +400,18 @@ function renderBarChart(id, data) {
 let chartProgressObj, chartRiskObj, chartBranchObj, chartWorkloadObj;
 
 function renderCharts() {
-    setTimeout(() => {
-        renderProgressChart();
-        renderRiskChart();
-        renderBranchChart();
-        renderWorkloadChart();
-    }, 300);
+  setTimeout(() => {
+    renderProgressChart();
+    renderRiskChart();
+    renderBranchChart();
+    renderWorkloadChart();
+  }, 300);
 }
 function createOrUpdateChart(canvasId, config, chartObjName) {
-  const ctx = document.getElementById(canvasId);
-  if (!ctx) return null;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || typeof Chart === "undefined") return;
+
+  const ctx = canvas.getContext("2d");
 
   if (window[chartObjName]) {
     window[chartObjName].destroy();
@@ -417,7 +419,6 @@ function createOrUpdateChart(canvasId, config, chartObjName) {
 
   window[chartObjName] = new Chart(ctx, config);
 }
-
 function renderProgressChart() {
   const total = findings.length;
   const closed = findings.filter(f => f.status === "Closed").length;
