@@ -215,9 +215,12 @@ function renderDashboard() {
     renderRiskHeatmap();
     renderExecutiveDashboard();
     renderCharts();
+
+    renderCriticalFinding();
+    renderAgingAnalysis();
+
     renderTeamDashboard();
-    renderKanban();
-}
+    renderKanban();}
 
     function calculateAging(dueDate, status) {
       if (!dueDate || status === "Closed") return "-";
@@ -766,5 +769,80 @@ window.applyDashboardFilter = function () {
 
     renderDashboard();
     renderCharts();
-
+    renderCriticalFinding();
+    renderAgingAnalysis();
 };
+function renderCriticalFinding(){
+
+const box = document.getElementById("criticalFindingList");
+
+if(!box) return;
+
+const data =
+getDashboardData()
+.filter(f =>
+f.riskLevel === "High" &&
+f.status !== "Closed"
+)
+.slice(0,5);
+
+
+box.innerHTML =
+data.map(f => `
+
+<tr>
+<td>${f.findingId || "-"}</td>
+<td>${f.riskLevel}</td>
+<td>${f.owner || "-"}</td>
+<td>${calculateAging(f.dueDate,f.status)}</td>
+</tr>
+
+`).join("");
+
+}
+
+
+function renderAgingAnalysis(){
+
+const box = document.getElementById("agingAnalysis");
+
+if(!box) return;
+
+
+let d30 = 0;
+let d60 = 0;
+let d90 = 0;
+
+
+getDashboardData()
+.filter(f => f.status !== "Closed")
+.forEach(f => {
+
+let aging =
+Number(calculateAging(f.dueDate,f.status));
+
+
+if(aging <= 30) d30++;
+else if(aging <= 60) d60++;
+else d90++;
+
+});
+
+
+box.innerHTML = `
+
+<div class="aging-row">
+🟢 0-30 Days <b>${d30}</b>
+</div>
+
+<div class="aging-row">
+🟡 31-60 Days <b>${d60}</b>
+</div>
+
+<div class="aging-row">
+🔴 >60 Days <b>${d90}</b>
+</div>
+
+`;
+
+}
