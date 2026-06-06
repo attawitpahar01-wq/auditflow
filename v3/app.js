@@ -36,7 +36,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
 
     let currentUser = null;
     let findings = [];
-
+    let filteredFindings = [];
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
     const appDiv = document.getElementById("app");
@@ -77,6 +77,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
           id: d.id,
           ...d.data()
         }));
+          
+        filteredFindings = findings;
+          
         renderDashboard();
         renderTable();
       });
@@ -196,22 +199,25 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
       }).join("");
     };
 
-    function renderDashboard() {
-      const total = findings.length;
-      const high = findings.filter(f => f.riskLevel === "High").length;
-      const open = findings.filter(f => f.status !== "Closed").length;
-      const overdue = findings.filter(f => isOverdue(f.dueDate, f.status)).length;
+   function renderDashboard() {
+    const data = filteredFindings.length ? filteredFindings : findings;
 
-      document.getElementById("totalFinding").innerText = total;
-      document.getElementById("highRisk").innerText = high;
-      document.getElementById("openFinding").innerText = open;
-      document.getElementById("overdueFinding").innerText = overdue;
-      renderRiskHeatmap();
-      renderExecutiveDashboard();
-      renderCharts();
-      renderTeamDashboard();
-      renderKanban();
-    }
+    const total = data.length;
+    const high = data.filter(f => f.riskLevel === "High").length;
+    const open = data.filter(f => f.status !== "Closed").length;
+    const overdue = data.filter(f => isOverdue(f.dueDate, f.status)).length;
+
+    document.getElementById("totalFinding").innerText = total;
+    document.getElementById("highRisk").innerText = high;
+    document.getElementById("openFinding").innerText = open;
+    document.getElementById("overdueFinding").innerText = overdue;
+
+    renderRiskHeatmap();
+    renderExecutiveDashboard();
+    renderCharts();
+    renderTeamDashboard();
+    renderKanban();
+}
 
     function calculateAging(dueDate, status) {
       if (!dueDate || status === "Closed") return "-";
@@ -730,3 +736,30 @@ document.addEventListener("DOMContentLoaded", () => {
     showPage("pageDashboard");
 
 });
+window.applyDashboardFilter = function () {
+
+    const branch =
+    document.getElementById("filterBranch")?.value || "All";
+
+    const risk =
+    document.getElementById("filterRisk")?.value || "All";
+
+    const status =
+    document.getElementById("filterStatus")?.value || "All";
+
+
+    filteredFindings = findings.filter(f => {
+
+        return (
+            (branch === "All" || f.branch === branch) &&
+            (risk === "All" || f.riskLevel === risk) &&
+            (status === "All" || f.status === status)
+        );
+
+    });
+
+
+    renderDashboard();
+    renderCharts();
+
+};
