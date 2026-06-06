@@ -861,3 +861,44 @@ canvas {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+.risk-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.risk-summary-card {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid #334155;
+  background: linear-gradient(145deg, #111827, #020617);
+}
+
+.risk-summary-card span {
+  display: block;
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 10px;
+}
+
+.risk-summary-card strong {
+  font-size: 32px;
+  color: #38bdf8;
+}
+
+.risk-summary-card:nth-child(1) strong {
+  color: #22c55e;
+}
+
+.risk-summary-card:nth-child(2) strong {
+  color: #f59e0b;
+}
+
+.risk-summary-card:nth-child(3) strong {
+  color: #fb7185;
+}
+
+.risk-summary-card:nth-child(4) strong {
+  color: #dc2626;
+}
