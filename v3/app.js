@@ -11,6 +11,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
       getFirestore,
       collection,
       addDoc,
+      getDocs,  
       updateDoc,
       deleteDoc,
       doc,
