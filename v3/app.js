@@ -218,7 +218,7 @@ function renderDashboard() {
 
     renderCriticalFinding();
     renderAgingAnalysis();
-
+    renderRiskSeveritySummary();
     renderTeamDashboard();
     renderKanban();}
 
@@ -845,4 +845,33 @@ box.innerHTML = `
 
 `;
 
+}
+function renderRiskSeveritySummary() {
+  const data = getDashboardData();
+
+  let low = 0;
+  let medium = 0;
+  let high = 0;
+  let critical = 0;
+
+  data.forEach(f => {
+    const impact = Number(f.impact || 1);
+    const likelihood = Number(f.likelihood || 1);
+    const score = impact * likelihood;
+
+    if (score <= 4) low++;
+    else if (score <= 9) medium++;
+    else if (score <= 16) high++;
+    else critical++;
+  });
+
+  const lowEl = document.getElementById("riskScoreLow");
+  const mediumEl = document.getElementById("riskScoreMedium");
+  const highEl = document.getElementById("riskScoreHigh");
+  const criticalEl = document.getElementById("riskScoreCritical");
+
+  if (lowEl) lowEl.innerText = low;
+  if (mediumEl) mediumEl.innerText = medium;
+  if (highEl) highEl.innerText = high;
+  if (criticalEl) criticalEl.innerText = critical;
 }
