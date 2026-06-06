@@ -907,3 +907,29 @@ function renderManagementActionTracker() {
   if (actionOverdueEl) actionOverdueEl.innerText = overdue;
   if (actionRateEl) actionRateEl.innerText = rate + "%";
 }
+// ===============================
+// Team Management Modal
+// ===============================
+const btnManageTeam = document.getElementById("btnManageTeam");
+const teamModal = document.getElementById("teamModal");
+const btnCloseTeamModal = document.getElementById("btnCloseTeamModal");
+
+if (btnManageTeam && teamModal) {
+  btnManageTeam.addEventListener("click", () => {
+    teamModal.classList.remove("hidden");
+  });
+}
+
+if (btnCloseTeamModal && teamModal) {
+  btnCloseTeamModal.addEventListener("click", () => {
+    teamModal.classList.add("hidden");
+  });
+}
+
+if (teamModal) {
+  teamModal.addEventListener("click", (e) => {
+    if (e.target === teamModal) {
+      teamModal.classList.add("hidden");
+    }
+  });
+}
