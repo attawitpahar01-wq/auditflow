@@ -422,24 +422,18 @@ function renderProgressChart() {
     }
 }, "chartProgressObj");
 }
-
 function renderRiskChart() {
-  const data = countBy("riskLevel");
-
-  function renderRiskChart() {
-    const data = countBy("riskLevel");
+    const low = findings.filter(f => (f.riskLevel || "").toLowerCase() === "low").length;
+    const medium = findings.filter(f => (f.riskLevel || "").toLowerCase() === "medium").length;
+    const high = findings.filter(f => (f.riskLevel || "").toLowerCase() === "high").length;
 
     createOrUpdateChart("chartRisk", {
         type: "doughnut",
         data: {
-            labels: Object.keys(data),
+            labels: ["Low", "Medium", "High"],
             datasets: [{
-                data: Object.values(data),
-                backgroundColor: [
-                    "#22c55e",
-                    "#facc15",
-                    "#ef4444"
-                ],
+                data: [low, medium, high],
+                backgroundColor: ["#22c55e", "#f59e0b", "#fb7185"],
                 borderColor: "#0f172a",
                 borderWidth: 2
             }]
@@ -451,9 +445,11 @@ function renderRiskChart() {
             plugins: {
                 legend: {
                     position: "top"
-    }}}}, "chartRiskObj");}
+                }
+            }
+        }
+    }, "chartRiskObj");
 }
-
 function renderBranchChart() {
     const data = countBy("branch");
 
