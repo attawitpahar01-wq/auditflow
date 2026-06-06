@@ -199,8 +199,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
       }).join("");
     };
 
-   function renderDashboard() {
-    const data = filteredFindings.length ? filteredFindings : findings;
+function renderDashboard() {
+    const data = filteredFindings;
 
     const total = data.length;
     const high = data.filter(f => f.riskLevel === "High").length;
@@ -353,10 +353,12 @@ function renderExecutiveDashboard() {
   const criticalEl = document.getElementById("criticalAction");
   if (criticalEl) criticalEl.innerText = criticalAction;
 }
-    
+function getDashboardData() {
+    return filteredFindings;
+}    
 function countBy(field) {
  const result = {};
- findings.forEach(f => {
+ getDashboardData().forEach(f => {
  const key =
  f[field] || "ไม่ระบุ";
  result[key] = (result[key] || 0) + 1;});return result;}
@@ -415,11 +417,12 @@ function createOrUpdateChart(canvasId, config, chartObjName) {
   window[chartObjName] = new Chart(ctx, config);
 }
 function renderProgressChart() {
-  const total = findings.length;
-  const closed = findings.filter(f => f.status === "Closed").length;
-  const open = total - closed;
+    const data = getDashboardData();
+    const total = data.length;
+    const closed = data.filter(f => f.status === "Closed").length;
+    const open = total - closed;
 
- createOrUpdateChart("chartProgress", {
+    createOrUpdateChart("chartProgress", {
     type: "doughnut",
     data: {
         labels: ["Closed", "Open"],
