@@ -707,3 +707,111 @@ canvas {
   max-height: 240px !important;
   width: 100% !important;
 }
+/* =====================================================
+   Step 8.3 Dashboard Final Polish
+===================================================== */
+
+.dashboard-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 22px;
+  padding: 24px;
+
+  border-radius: 22px;
+  border: 1px solid #334155;
+
+  background:
+    radial-gradient(circle at top left, rgba(56,189,248,.22), transparent 35%),
+    linear-gradient(135deg, #111827, #020617);
+
+  box-shadow: 0 18px 45px rgba(0,0,0,.38);
+}
+
+.dashboard-hero h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.dashboard-hero p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.dashboard-hero-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+
+  padding: 14px 18px;
+  border-radius: 16px;
+
+  background: rgba(15,23,42,.75);
+  border: 1px solid #334155;
+}
+
+.dashboard-hero-badge span {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.dashboard-hero-badge strong {
+  font-size: 18px;
+  color: #22c55e;
+}
+
+/* KPI polish */
+#pageDashboard > .grid .card {
+  position: relative;
+  overflow: hidden;
+}
+
+#pageDashboard > .grid .card::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -30px;
+
+  width: 90px;
+  height: 90px;
+
+  border-radius: 50%;
+  background: rgba(56,189,248,.12);
+}
+
+#pageDashboard > .grid .card:nth-child(2)::after {
+  background: rgba(251,113,133,.14);
+}
+
+#pageDashboard > .grid .card:nth-child(3)::after {
+  background: rgba(129,140,248,.14);
+}
+
+#pageDashboard > .grid .card:nth-child(4)::after {
+  background: rgba(245,158,11,.14);
+}
+
+#pageDashboard .kpi {
+  text-shadow: 0 0 18px rgba(56,189,248,.35);
+}
+
+/* Chart title polish */
+.dashboard-panel > h3 {
+  font-size: 16px;
+  color: #cbd5e1;
+  margin-bottom: 18px;
+}
+
+.dashboard-chart-grid .chart-card {
+  transition: transform .2s ease, border-color .2s ease;
+}
+
+.dashboard-chart-grid .chart-card:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8;
+}
