@@ -335,14 +335,16 @@ function renderDashboard() {
 }
 // Executive Dashboard
 function renderExecutiveDashboard() {
-  const total = findings.length;
-  const closed = findings.filter(f => f.status === "Closed").length;
+  const data = getDashboardData();
+
+  const total = data.length;
+  const closed = data.filter(f => f.status === "Closed").length;
 
   const completionRate =
     total === 0 ? 0 : Math.round((closed / total) * 100);
 
   const criticalAction =
-    findings.filter(f =>
+    data.filter(f =>
       f.riskLevel === "High" &&
       f.status !== "Closed"
     ).length;
@@ -385,7 +387,7 @@ function renderBarChart(id, data) {
  </div>`;});box.innerHTML = html;}
     function countOpenByOwner() {
   const result = {};
-  findings.forEach(f => {
+  getDashboardData().forEach(f => {
     if (f.status !== "Closed") {
       const key = f.owner || "ไม่ระบุ Owner";
       result[key] = (result[key] || 0) + 1;
@@ -446,32 +448,32 @@ function renderProgressChart() {
 }, "chartProgressObj");
 }
 function renderRiskChart() {
-    const low = findings.filter(f => (f.riskLevel || "").toLowerCase() === "low").length;
-    const medium = findings.filter(f => (f.riskLevel || "").toLowerCase() === "medium").length;
-    const high = findings.filter(f => (f.riskLevel || "").toLowerCase() === "high").length;
+  const data = getDashboardData();
 
-    createOrUpdateChart("chartRisk", {
-        type: "doughnut",
-        data: {
-            labels: ["Low", "Medium", "High"],
-            datasets: [{
-                data: [low, medium, high],
-                backgroundColor: ["#22c55e", "#f59e0b", "#fb7185"],
-                borderColor: "#0f172a",
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: "62%",
-            plugins: {
-                legend: {
-                    position: "top"
-                }
-            }
-        }
-    }, "chartRiskObj");
+  const low = data.filter(f => (f.riskLevel || "").toLowerCase() === "low").length;
+  const medium = data.filter(f => (f.riskLevel || "").toLowerCase() === "medium").length;
+  const high = data.filter(f => (f.riskLevel || "").toLowerCase() === "high").length;
+
+  createOrUpdateChart("chartRisk", {
+    type: "doughnut",
+    data: {
+      labels: ["Low", "Medium", "High"],
+      datasets: [{
+        data: [low, medium, high],
+        backgroundColor: ["#22c55e", "#f59e0b", "#fb7185"],
+        borderColor: "#0f172a",
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "62%",
+      plugins: {
+        legend: { position: "top" }
+      }
+    }
+  }, "chartRiskObj");
 }
 function renderBranchChart() {
     const data = countBy("branch");
