@@ -815,3 +815,49 @@ canvas {
   transform: translateY(-2px);
   border-color: #38bdf8;
 }
+/* Dashboard Filter Bar */
+.dashboard-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+
+  margin-bottom: 22px;
+  padding: 18px;
+
+  border-radius: 18px;
+  border: 1px solid #334155;
+
+  background: linear-gradient(145deg, #111827, #020617);
+}
+
+.dashboard-filter-bar label {
+  display: block;
+  margin-bottom: 8px;
+
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.dashboard-filter-bar select {
+  width: 100%;
+  height: 42px;
+
+  background: #020617;
+  color: #e5e7eb;
+
+  border: 1px solid #334155;
+  border-radius: 12px;
+
+  padding: 0 12px;
+}
+
+.dashboard-filter-bar select:focus {
+  border-color: #38bdf8;
+}
+
+@media (max-width: 900px) {
+  .dashboard-filter-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
