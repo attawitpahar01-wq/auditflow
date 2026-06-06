@@ -77,7 +77,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
           id: d.id,
           ...d.data()
         }));
-
         renderDashboard();
         renderTable();
       });
@@ -208,7 +207,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
       document.getElementById("openFinding").innerText = open;
       document.getElementById("overdueFinding").innerText = overdue;
       renderRiskHeatmap();
-      // renderExecutiveDashboard();
+      renderExecutiveDashboard();
       renderCharts();
       renderTeamDashboard();
       renderKanban();
@@ -330,8 +329,23 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
 }
 // Executive Dashboard
 function renderExecutiveDashboard() {
-  // Disabled old text dashboard
-  // Dashboard now uses Chart.js only
+  const total = findings.length;
+  const closed = findings.filter(f => f.status === "Closed").length;
+
+  const completionRate =
+    total === 0 ? 0 : Math.round((closed / total) * 100);
+
+  const criticalAction =
+    findings.filter(f =>
+      f.riskLevel === "High" &&
+      f.status !== "Closed"
+    ).length;
+
+  const completionEl = document.getElementById("completionRate");
+  if (completionEl) completionEl.innerText = completionRate + "%";
+
+  const criticalEl = document.getElementById("criticalAction");
+  if (criticalEl) criticalEl.innerText = criticalAction;
 }
     
 function countBy(field) {
