@@ -219,6 +219,7 @@ function renderDashboard() {
     renderCriticalFinding();
     renderAgingAnalysis();
     renderRiskSeveritySummary();
+    renderManagementActionTracker();
     renderTeamDashboard();
     renderKanban();}
 
@@ -874,4 +875,35 @@ function renderRiskSeveritySummary() {
   if (mediumEl) mediumEl.innerText = medium;
   if (highEl) highEl.innerText = high;
   if (criticalEl) criticalEl.innerText = critical;
+}
+function renderManagementActionTracker() {
+  const data = getDashboardData();
+
+  const closed = data.filter(f =>
+    f.mapStatus === "Closed" ||
+    f.status === "Closed"
+  ).length;
+
+  const inProgress = data.filter(f =>
+    f.mapStatus === "In Progress" ||
+    f.status === "In Progress" ||
+    f.status === "Open"
+  ).length;
+
+  const overdue = data.filter(f =>
+    isOverdue(f.dueDate, f.status)
+  ).length;
+
+  const total = closed + inProgress;
+  const rate = total === 0 ? 0 : Math.round((closed / total) * 100);
+
+  const actionClosedEl = document.getElementById("actionClosed");
+  const actionProgressEl = document.getElementById("actionProgress");
+  const actionOverdueEl = document.getElementById("actionOverdue");
+  const actionRateEl = document.getElementById("actionRate");
+
+  if (actionClosedEl) actionClosedEl.innerText = closed;
+  if (actionProgressEl) actionProgressEl.innerText = inProgress;
+  if (actionOverdueEl) actionOverdueEl.innerText = overdue;
+  if (actionRateEl) actionRateEl.innerText = rate + "%";
 }
