@@ -933,3 +933,13 @@ if (teamModal) {
     }
   });
 }
+window.openTeamModal = function () {
+  const modal = document.getElementById("teamModal");
+
+  if (!modal) {
+    alert("ไม่พบ teamModal ใน index.html");
+    return;
+  }
+
+  modal.classList.remove("hidden");
+};
