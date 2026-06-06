@@ -944,3 +944,88 @@ window.openTeamModal = function () {
 
   modal.classList.remove("hidden");
 };
+// ===============================
+// Team Management Firestore
+// ===============================
+
+const teamRef = collection(db, "auditTeam");
+
+window.saveAuditor = async function () {
+  const id = document.getElementById("teamMemberId")?.value || "";
+  const name = document.getElementById("auditorName")?.value.trim();
+  const role = document.getElementById("auditorRole")?.value;
+  const status = document.getElementById("auditorStatus")?.value;
+
+  if (!name) {
+    alert("กรุณาระบุชื่อ Auditor");
+    return;
+  }
+
+  const data = {
+    name,
+    role,
+    status,
+    updatedAt: serverTimestamp()
+  };
+
+  if (id) {
+    await updateDoc(doc(db, "auditTeam", id), data);
+  } else {
+    await addDoc(teamRef, {
+      ...data,
+      createdAt: serverTimestamp()
+    });
+  }
+
+  clearTeamForm();
+};
+
+window.clearTeamForm = function () {
+  document.getElementById("teamMemberId").value = "";
+  document.getElementById("auditorName").value = "";
+  document.getElementById("auditorRole").value = "Auditor";
+  document.getElementById("auditorStatus").value = "Active";
+};
+
+window.editAuditor = function (id, name, role, status) {
+  document.getElementById("teamMemberId").value = id;
+  document.getElementById("auditorName").value = name;
+  document.getElementById("auditorRole").value = role;
+  document.getElementById("auditorStatus").value = status;
+};
+
+window.deleteAuditor = async function (id) {
+  if (!confirm("ยืนยันการลบ Auditor รายนี้?")) return;
+  await deleteDoc(doc(db, "auditTeam", id));
+};
+
+function listenAuditTeam() {
+  const body = document.getElementById("teamTableBody");
+  if (!body) return;
+
+  onSnapshot(query(teamRef, orderBy("name")), (snapshot) => {
+    body.innerHTML = "";
+
+    snapshot.forEach((docSnap) => {
+      const t = docSnap.data();
+
+      body.innerHTML += `
+        <tr>
+          <td>${t.name || "-"}</td>
+          <td>${t.role || "-"}</td>
+          <td>${t.status || "-"}</td>
+          <td>
+            <button type="button" onclick="editAuditor('${docSnap.id}', '${t.name || ""}', '${t.role || ""}', '${t.status || ""}')">
+              Edit
+            </button>
+            <button type="button" onclick="deleteAuditor('${docSnap.id}')">
+              Delete
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+  });
+}
+
+listenAuditTeam();
