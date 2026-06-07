@@ -969,6 +969,118 @@ canvas {
   font-weight: 700;
 }
 
+/* Add / Edit Finding Form */
+#pageForm > .card {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+  border-radius: 18px;
+  background: #0f172a;
+}
+
+#pageForm h3 {
+  margin: 0 0 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #334155;
+  color: #f8fafc;
+  font-size: 18px;
+}
+
+#pageForm .grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+#pageForm .grid > div {
+  min-width: 0;
+}
+
+#pageForm label {
+  display: block;
+  margin: 0 0 7px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#pageForm input,
+#pageForm select,
+#pageForm textarea {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 12px;
+  background: #020617;
+  border: 1px solid #334155;
+  color: #f8fafc;
+}
+
+#pageForm input::placeholder,
+#pageForm textarea::placeholder {
+  color: #64748b;
+}
+
+#pageForm textarea {
+  display: block;
+  min-height: 104px;
+  resize: vertical;
+  line-height: 1.45;
+  margin-bottom: 16px;
+}
+
+#pageForm > .card > label {
+  margin-top: 14px;
+}
+
+#pageForm .grid textarea {
+  min-height: 96px;
+  margin-bottom: 0;
+}
+
+#pageForm input:focus,
+#pageForm select:focus,
+#pageForm textarea:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, .12);
+}
+
+#pageForm button {
+  min-height: 42px;
+  padding: 0 18px;
+  margin-right: 8px;
+  border-radius: 12px;
+}
+
+#pageForm button.secondary {
+  background: #334155;
+}
+
+#pageForm button.secondary:hover {
+  background: #475569;
+}
+
+@media (max-width: 1100px) {
+  #pageForm .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  #pageForm > .card {
+    padding: 18px;
+  }
+
+  #pageForm .grid {
+    grid-template-columns: 1fr;
+  }
+
+  #pageForm button {
+    width: 100%;
+    margin: 0 0 10px;
+  }
+}
+
 @media (max-width: 1200px) {
   .kanban-board {
     grid-template-columns: repeat(5, minmax(240px, 240px));
