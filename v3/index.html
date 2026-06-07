@@ -243,9 +243,9 @@
     <section id="pageTeam" class="page-section">
 <div class="card">
 <h3>👥 Team Dashboard</h3>
-<button type="button" class="btn-primary" id="btnManageTeam" onclick="openTeamModal()">
+<button type="button" class="btn-primary" id="btnManageTeam">
   👥 จัดการทีม
-</button>  
+</button>
 <div class="grid">
 <div class="card">
 <div>งานทั้งหมด</div>
@@ -685,7 +685,80 @@ Branch Master Data
 
   </div>
 </div>
+  <!-- Team Management Modal -->
+<div id="teamModal" class="modal hidden">
 
+  <div class="modal-content">
+
+    <div class="modal-header">
+      <h2>👥 จัดการทีมตรวจสอบ</h2>
+
+      <button id="btnCloseTeamModal" class="close-btn">
+        ×
+      </button>
+    </div>
+
+
+    <input type="hidden" id="editTeamId">
+
+
+    <label>ชื่อ Auditor</label>
+    <input 
+      type="text" 
+      id="auditorName"
+      placeholder="ชื่อผู้ตรวจสอบ"
+    >
+
+
+    <label>Role</label>
+    <select id="auditorRole">
+
+      <option value="Supervisor">
+        Supervisor
+      </option>
+
+      <option value="Senior Auditor">
+        Senior Auditor
+      </option>
+
+      <option value="Auditor">
+        Auditor
+      </option>
+
+    </select>
+
+
+    <label>Status</label>
+    <select id="auditorStatus">
+
+      <option value="Active">
+        Active
+      </option>
+
+      <option value="Inactive">
+        Inactive
+      </option>
+
+    </select>
+
+
+    <button id="btnSaveTeam" class="btn-primary">
+      💾 Save Auditor
+    </button>
+
+
+    <hr>
+
+
+    <h3>สมาชิกทีม</h3>
+
+    <div id="teamList">
+    </div>
+
+
+  </div>
+
+</div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script type="module" src="app.js"></script>
   </body>
