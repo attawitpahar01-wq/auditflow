@@ -948,10 +948,10 @@ window.openTeamModal = function () {
 // Team Management Firestore
 // ===============================
 
-const teamRef = collection(db, "auditTeam");
+const teamRef = collection(db, "audit_team");
 
 window.saveAuditor = async function () {
-  const id = document.getElementById("teamMemberId")?.value || "";
+  const id = document.getElementById("editTeamId")?.value || "";
   const name = document.getElementById("auditorName")?.value.trim();
   const role = document.getElementById("auditorRole")?.value;
   const status = document.getElementById("auditorStatus")?.value;
@@ -969,7 +969,7 @@ window.saveAuditor = async function () {
   };
 
   if (id) {
-    await updateDoc(doc(db, "auditTeam", id), data);
+    await updateDoc(doc(db, "audit_team", id), data);
   } else {
     await addDoc(teamRef, {
       ...data,
@@ -981,7 +981,7 @@ window.saveAuditor = async function () {
 };
 
 window.clearTeamForm = function () {
-  document.getElementById("teamMemberId").value = "";
+  document.getElementById("editTeamId").value = "";
   document.getElementById("auditorName").value = "";
   document.getElementById("auditorRole").value = "Auditor";
   document.getElementById("auditorStatus").value = "Active";
@@ -1170,28 +1170,6 @@ window.deleteTeamMember = async function(id) {
   alert("ลบข้อมูลเรียบร้อย");
 
 };
-/* ==============================
-   Edit Auditor
-============================== */
-
-window.editAuditor = function (
-  id,
-  name,
-  role,
-  status
-) {
-
-  document.getElementById("editTeamId").value = Id;
-
-  document.getElementById("auditorName").value = name;
-
-  document.getElementById("auditorRole").value = role;
-
-  document.getElementById("auditorStatus").value = status;
-
-};
-
-
 
 /* ==============================
    Delete Auditor
