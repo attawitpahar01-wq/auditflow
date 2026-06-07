@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import {
       getAuth,
       GoogleAuthProvider,
@@ -38,6 +38,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
     let currentUser = null;
     let findings = [];
     let filteredFindings = [];
+    let teamMembersById = {};
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
     const appDiv = document.getElementById("app");
@@ -89,19 +90,50 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
       });
     }
 
+    function getOwnerDisplayName(f) {
+      if (!f) return "Unassigned";
+
+      const ownerName = getDisplayableOwnerText(f.ownerName);
+      if (ownerName) return ownerName;
+
+      if (f.ownerId && teamMembersById[f.ownerId]) {
+        return teamMembersById[f.ownerId].name || "Unassigned";
+      }
+
+      if (f.owner && teamMembersById[f.owner]) {
+        return teamMembersById[f.owner].name || "Unassigned";
+      }
+
+      const owner = getDisplayableOwnerText(f.owner);
+      if (owner) return owner;
+
+      return "Unassigned";
+    }
+
+    function getDisplayableOwnerText(value) {
+      if (!value || isFirestoreDocumentId(value)) return "";
+      return value;
+    }
+
+    function isFirestoreDocumentId(value) {
+      return typeof value === "string" &&
+        /^[A-Za-z0-9]{16,}$/.test(value);
+    }
+
     window.saveFinding = async function () {
-    const ownerSelect = document.getElementById("owner");
-    const selectedOwner =
+      const ownerSelect = document.getElementById("owner");
+      const selectedOwner =
         ownerSelect && ownerSelect.selectedIndex >= 0
           ? ownerSelect.options[ownerSelect.selectedIndex]
           : null;
-    const selectedOwnerId = getValue("owner");
-    const selectedOwnerName =
-    (selectedOwner && selectedOwner.dataset.name) ||
-    selectedOwnerId ||
-    "";
-    const selectedOwnerRole =
-    (selectedOwner && selectedOwner.dataset.role) || "";
+      const selectedOwnerId = getValue("owner");
+      const selectedOwnerName =
+        (selectedOwner && selectedOwner.dataset.name) ||
+        selectedOwnerId ||
+        "";
+      const selectedOwnerRole =
+        (selectedOwner && selectedOwner.dataset.role) || "";
+
       const data = {
         findingId: getValue("findingId") || generateFindingId(),
         branch: getValue("branch"),
@@ -117,10 +149,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
         riskScore:
           Number(getValue("impact")) *
           Number(getValue("likelihood")),
-          ownerId: selectedOwnerId,
-          ownerName: selectedOwnerName,
-          ownerRole: selectedOwnerRole,
-          owner: selectedOwnerName,
+        ownerId: selectedOwnerId,
+        ownerName: selectedOwnerName,
+        ownerRole: selectedOwnerRole,
+        owner: selectedOwnerName,
         dueDate: getValue("dueDate"),
         status: getValue("status"),
         evidenceLink: getValue("evidenceLink"),
@@ -204,7 +236,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
             <td>${f.auditArea || ""}</td>
             <td class="${riskClass}">${f.riskLevel || ""}</td>
             <td>${f.status || ""}</td>
-            <td>${f.owner || ""}</td>
+            <td>${getOwnerDisplayName(f)}</td>
             <td>${f.dueDate || ""}</td>
             <td>${aging}</td>
             <td>${f.mapStatus || "-"}</td>
@@ -269,7 +301,7 @@ function renderDashboard() {
       const rows = findings.map(f => [
         f.findingId, f.branch, f.auditArea, f.condition, f.criteria,
         f.cause, f.effectRisk, f.recommendation, f.riskLevel,
-        f.owner, f.dueDate, f.status, f.evidenceLink
+        getOwnerDisplayName(f), f.dueDate, f.status, f.evidenceLink
       ]);
 
       let csv = [headers, ...rows]
@@ -412,8 +444,7 @@ function renderBarChart(id, data) {
   const result = {};
   getDashboardData().forEach(f => {
     if (f.status !== "Closed") {
-      const ownerName = f.ownerName || f.owner || "Unassigned";
-      const key = ownerName;
+      const key = getOwnerDisplayName(f);
       result[key] = (result[key] || 0) + 1;
     }
   });
@@ -620,8 +651,7 @@ renderTeamTable();
 function renderTeamWorkload(){
 const data = {};
 findings.forEach(f=>{
-const ownerName = f.ownerName || f.owner || "Unassigned";
-const owner = ownerName;
+const owner = getOwnerDisplayName(f);
 data[owner] =
 (data[owner] || 0) + 1;
 });
@@ -644,8 +674,7 @@ document.getElementById("teamWorkload").innerHTML = html;
 function renderTeamTable(){
 const owners = {};
 findings.forEach(f=>{
-const ownerName = f.ownerName || f.owner || "Unassigned";
-const owner = ownerName;
+const owner = getOwnerDisplayName(f);
 if(!owners[owner]){
 owners[owner]={
 total:0,
@@ -708,7 +737,7 @@ function renderKanban() {
         <div>${f.auditArea || ""}</div>
         <hr>
         <div>Risk: ${f.riskLevel || "-"}</div>
-        <div>Owner: ${f.owner || "-"}</div>
+        <div>Owner: ${getOwnerDisplayName(f)}</div>
         <div>Due: ${f.dueDate || "-"}</div>
       </div>
     `;
@@ -846,7 +875,7 @@ data.map(f => `
 <tr>
 <td>${f.findingId || "-"}</td>
 <td>${f.riskLevel}</td>
-<td>${f.owner || "-"}</td>
+<td>${getOwnerDisplayName(f)}</td>
 <td>${calculateAging(f.dueDate,f.status)}</td>
 </tr>
 
@@ -1059,9 +1088,11 @@ function listenAuditTeam() {
 
   onSnapshot(query(teamRef, orderBy("name")), (snapshot) => {
     body.innerHTML = "";
+    const nextTeamMembersById = {};
 
     snapshot.forEach((docSnap) => {
       const t = docSnap.data();
+      nextTeamMembersById[docSnap.id] = t;
 
       body.innerHTML += `
   <tr>
@@ -1085,6 +1116,10 @@ function listenAuditTeam() {
   </tr>
 `;
     });
+
+    teamMembersById = nextTeamMembersById;
+    renderDashboard();
+    renderTable();
   });
 }
 
@@ -1259,9 +1294,11 @@ function loadOwnerDropdown() {
           -- เลือกผู้รับผิดชอบ --
         </option>
       `;
+      const nextTeamMembersById = {};
 
       snapshot.forEach((docSnap) => {
         const t = docSnap.data();
+        nextTeamMembersById[docSnap.id] = t;
 
         if (t.status === "Active") {
         ownerSelect.innerHTML += `
@@ -1273,6 +1310,13 @@ function loadOwnerDropdown() {
       </option>`;
         }
       });
+
+      teamMembersById = {
+        ...teamMembersById,
+        ...nextTeamMembersById
+      };
+      renderDashboard();
+      renderTable();
     }
   );
 }
