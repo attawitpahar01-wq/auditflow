@@ -1080,8 +1080,7 @@ setTimeout(() => {
 
 window.saveTeamMember = async function () {
 
-  const id = document.getElementById("editTeamId").value;
-
+  const id = document.getElementById("editTeamId").value.trim();
   const name = document.getElementById("auditorName").value;
   const role = document.getElementById("auditorRole").value;
   const status = document.getElementById("auditorStatus").value;
