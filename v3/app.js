@@ -71,7 +71,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
     });
 
     function listenFindings() {
-      const q = query(collection(db, "audit_findings"), orderBy("createdAt", "desc"));
+      const q = query((db, "audit_findings"), orderBy("createdAt", "desc"));
 
       onSnapshot(q, (snapshot) => {
         findings = snapshot.docs.map(d => ({
@@ -1068,3 +1068,55 @@ setTimeout(() => {
     };
   }
 }, 500);
+/* ==============================
+   Save Audit Team
+============================== */
+
+window.saveTeamMember = async function () {
+
+  const id = document.getElementById("editTeamId").value;
+
+  const name = document.getElementById("auditorName").value;
+  const role = document.getElementById("auditorRole").value;
+  const status = document.getElementById("auditorStatus").value;
+
+
+  if (!name) {
+    alert("กรุณากรอกชื่อ Auditor");
+    return;
+  }
+
+
+  const data = {
+    name,
+    role,
+    status,
+    updatedAt: serverTimestamp()
+  };
+
+
+  if (id) {
+
+    await updateDoc(
+      doc(db, "audit_team", id),
+      data
+    );
+
+  } else {
+
+    data.createdAt = serverTimestamp();
+
+    await addDoc(
+      collection(db, "audit_team"),
+      data
+    );
+
+  }
+
+
+  document.getElementById("editTeamId").value = "";
+  document.getElementById("auditorName").value = "";
+
+  alert("บันทึกทีมสำเร็จ");
+
+};
