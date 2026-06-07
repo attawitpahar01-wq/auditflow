@@ -18,7 +18,8 @@
       onSnapshot,
       serverTimestamp,
       query,
-      orderBy
+      orderBy,
+      where
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
    const firebaseConfig = {
@@ -38,6 +39,7 @@
     let currentUser = null;
     let findings = [];
     let filteredFindings = [];
+    let actionPlans = [];
     let teamMembersById = {};
     let teamMembersByName = {};
     const loginBtn = document.getElementById("loginBtn");
@@ -62,6 +64,7 @@
         logoutBtn.classList.remove("hidden");
         appDiv.classList.remove("hidden");
         listenFindings();
+        listenActionPlans();
         showPage("pageDashboard");
       } else {
         currentUser = null;
@@ -272,6 +275,7 @@
             <td>${f.progressPercent || 0}%</td>
             <td>
               <button onclick="editFinding('${f.id}')">แก้ไข</button>
+              <button onclick="createActionPlanFromFinding('${f.id}')">Create Action Plan</button>
               <button class="danger" onclick="deleteFinding('${f.id}')">ลบ</button>
             </td>
           </tr>
@@ -292,6 +296,317 @@
       if (!ownerName) return "";
 
       return teamMembersByName[getOwnerNameKey(ownerName)]?.id || ownerName;
+    }
+
+    window.createActionPlanFromFinding = async function (findingDocId) {
+      const finding = findings.find(f => f.id === findingDocId);
+      if (!finding) {
+        alert("Finding not found");
+        return;
+      }
+
+      const existing = await getDocs(query(
+        collection(db, "action_plans"),
+        where("findingDocId", "==", findingDocId)
+      ));
+
+      if (!existing.empty) {
+        alert("Action Plan already exists for this finding");
+        return;
+      }
+
+      const ownerName = getOwnerDisplayName(finding);
+      const ownerId =
+        finding.ownerId ||
+        (finding.owner && teamMembersById[finding.owner] ? finding.owner : "") ||
+        teamMembersByName[getOwnerNameKey(ownerName)]?.id ||
+        "";
+      const ownerRole =
+        finding.ownerRole ||
+        (ownerId && teamMembersById[ownerId]?.role) ||
+        "";
+
+      const data = {
+        findingDocId,
+        findingId: finding.findingId || "",
+        branch: finding.branch || "",
+        auditArea: finding.auditArea || "",
+        riskLevel: finding.riskLevel || "",
+        findingCondition: finding.condition || "",
+        recommendation: finding.recommendation || "",
+        actionOwnerId: ownerId,
+        actionOwnerName: ownerName,
+        actionOwnerRole: ownerRole,
+        managementResponse: "",
+        correctiveAction: finding.recommendation || "",
+        originalDueDate: finding.dueDate || "",
+        revisedDueDate: "",
+        actionStatus: "Not Started",
+        evidenceLink: finding.evidenceLink || "",
+        iaVerificationStatus: "Pending Review",
+        iaVerificationComment: "",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: currentUser?.email || ""
+      };
+
+      await addDoc(collection(db, "action_plans"), data);
+      alert("Action Plan created successfully");
+      showPage("pageActionPlan");
+    };
+
+    function listenActionPlans() {
+      const q = query(
+        collection(db, "action_plans"),
+        orderBy("createdAt", "desc")
+      );
+
+      onSnapshot(q, (snapshot) => {
+        actionPlans = snapshot.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        }));
+
+        renderActionPlanDashboard();
+      });
+    }
+
+    function renderActionPlanDashboard() {
+      ensureActionPlanPageMarkup();
+      renderActionPlanKPIs();
+      renderActionPlanTable();
+    }
+
+    function ensureActionPlanPageMarkup() {
+      const page = document.getElementById("pageActionPlan");
+      if (!page || document.getElementById("actionPlanTable")) return;
+
+      page.innerHTML = `
+        <div class="card">
+          <h3>Management Action Plan</h3>
+
+          <div class="action-plan-kpis">
+            <div class="action-plan-kpi">
+              <span>Total Action Plans</span>
+              <strong id="actionPlanTotal">0</strong>
+            </div>
+            <div class="action-plan-kpi">
+              <span>Not Started</span>
+              <strong id="actionPlanNotStarted">0</strong>
+            </div>
+            <div class="action-plan-kpi">
+              <span>In Progress</span>
+              <strong id="actionPlanInProgress">0</strong>
+            </div>
+            <div class="action-plan-kpi">
+              <span>Overdue</span>
+              <strong id="actionPlanOverdue">0</strong>
+            </div>
+            <div class="action-plan-kpi">
+              <span>Completed</span>
+              <strong id="actionPlanCompleted">0</strong>
+            </div>
+          </div>
+
+          <div class="action-plan-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Finding ID</th>
+                  <th>Branch</th>
+                  <th>Audit Area</th>
+                  <th>Risk</th>
+                  <th>Action Owner</th>
+                  <th>Corrective Action</th>
+                  <th>Original Due Date</th>
+                  <th>Revised Due Date</th>
+                  <th>Action Status</th>
+                  <th>IA Verification</th>
+                  <th>Evidence</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="actionPlanTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="actionPlanEditModal" class="modal-overlay hidden">
+          <div class="modal-box action-plan-modal">
+            <div class="modal-header">
+              <h2>Edit Action Plan</h2>
+              <button type="button" class="modal-close" onclick="closeActionPlanEditor()">&times;</button>
+            </div>
+
+            <input type="hidden" id="actionPlanEditId">
+
+            <div class="action-plan-form">
+              <div>
+                <label>Management Response</label>
+                <textarea id="editManagementResponse"></textarea>
+              </div>
+              <div>
+                <label>Corrective Action</label>
+                <textarea id="editCorrectiveAction"></textarea>
+              </div>
+              <div>
+                <label>Revised Due Date</label>
+                <input id="editRevisedDueDate" type="date">
+              </div>
+              <div>
+                <label>Action Status</label>
+                <select id="editActionStatus">
+                  <option value="Not Started">Not Started</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Overdue">Overdue</option>
+                </select>
+              </div>
+              <div>
+                <label>Evidence Link</label>
+                <input id="editActionEvidenceLink" placeholder="Google Drive Link">
+              </div>
+              <div>
+                <label>IA Verification</label>
+                <select id="editIaVerificationStatus">
+                  <option value="Pending Review">Pending Review</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Not Verified">Not Verified</option>
+                </select>
+              </div>
+              <div class="action-plan-form-full">
+                <label>IA Verification Comment</label>
+                <textarea id="editIaVerificationComment"></textarea>
+              </div>
+            </div>
+
+            <div class="action-plan-modal-actions">
+              <button type="button" onclick="saveActionPlanEdit()">Save</button>
+              <button type="button" class="secondary" onclick="closeActionPlanEditor()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderActionPlanKPIs() {
+      const total = actionPlans.length;
+      const notStarted = actionPlans.filter(p => getCalculatedActionStatus(p) === "Not Started").length;
+      const inProgress = actionPlans.filter(p => getCalculatedActionStatus(p) === "In Progress").length;
+      const overdue = actionPlans.filter(p => getCalculatedActionStatus(p) === "Overdue").length;
+      const completed = actionPlans.filter(p => getCalculatedActionStatus(p) === "Completed").length;
+
+      setText("actionPlanTotal", total);
+      setText("actionPlanNotStarted", notStarted);
+      setText("actionPlanInProgress", inProgress);
+      setText("actionPlanOverdue", overdue);
+      setText("actionPlanCompleted", completed);
+    }
+
+    function renderActionPlanTable() {
+      const tbody = document.getElementById("actionPlanTable");
+      if (!tbody) return;
+
+      if (actionPlans.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="12" class="table-empty">No action plans found</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = actionPlans.map(plan => {
+        const status = getCalculatedActionStatus(plan);
+        const evidence = plan.evidenceLink
+          ? `<a href="${plan.evidenceLink}" target="_blank" rel="noopener">Open</a>`
+          : "-";
+
+        return `
+          <tr>
+            <td>${plan.findingId || "-"}</td>
+            <td>${plan.branch || "-"}</td>
+            <td>${plan.auditArea || "-"}</td>
+            <td>${plan.riskLevel || "-"}</td>
+            <td>${plan.actionOwnerName || "-"}</td>
+            <td>${plan.correctiveAction || "-"}</td>
+            <td>${plan.originalDueDate || "-"}</td>
+            <td>${plan.revisedDueDate || "-"}</td>
+            <td><span class="action-status ${getActionStatusClass(status)}">${status}</span></td>
+            <td>${plan.iaVerificationStatus || "-"}</td>
+            <td>${evidence}</td>
+            <td>
+              <button onclick="editActionPlan('${plan.id}')">Edit</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    window.editActionPlan = function (id) {
+      const plan = actionPlans.find(p => p.id === id);
+      if (!plan) return;
+
+      setValue("actionPlanEditId", plan.id);
+      setValue("editManagementResponse", plan.managementResponse);
+      setValue("editCorrectiveAction", plan.correctiveAction);
+      setValue("editRevisedDueDate", plan.revisedDueDate);
+      setValue("editActionStatus", plan.actionStatus || "Not Started");
+      setValue("editActionEvidenceLink", plan.evidenceLink);
+      setValue("editIaVerificationStatus", plan.iaVerificationStatus || "Pending Review");
+      setValue("editIaVerificationComment", plan.iaVerificationComment);
+
+      const modal = document.getElementById("actionPlanEditModal");
+      if (modal) modal.classList.remove("hidden");
+    };
+
+    window.closeActionPlanEditor = function () {
+      const modal = document.getElementById("actionPlanEditModal");
+      if (modal) modal.classList.add("hidden");
+    };
+
+    window.saveActionPlanEdit = async function () {
+      const id = getValue("actionPlanEditId");
+      if (!id) return;
+
+      await updateDoc(doc(db, "action_plans", id), {
+        managementResponse: getValue("editManagementResponse"),
+        correctiveAction: getValue("editCorrectiveAction"),
+        revisedDueDate: getValue("editRevisedDueDate"),
+        actionStatus: getValue("editActionStatus"),
+        evidenceLink: getValue("editActionEvidenceLink"),
+        iaVerificationStatus: getValue("editIaVerificationStatus"),
+        iaVerificationComment: getValue("editIaVerificationComment"),
+        updatedAt: serverTimestamp()
+      });
+
+      closeActionPlanEditor();
+      alert("Action Plan updated successfully");
+    };
+
+    function getCalculatedActionStatus(plan) {
+      if ((plan.actionStatus || "") === "Completed") return "Completed";
+      if (isActionPlanOverdue(plan)) return "Overdue";
+      return plan.actionStatus || "Not Started";
+    }
+
+    function isActionPlanOverdue(plan) {
+      const dueDate = plan.revisedDueDate || plan.originalDueDate;
+      if (!dueDate || (plan.actionStatus || "") === "Completed") return false;
+
+      return new Date(dueDate) < new Date(new Date().toDateString());
+    }
+
+    function getActionStatusClass(status) {
+      if (status === "Completed") return "completed";
+      if (status === "In Progress") return "in-progress";
+      if (status === "Overdue") return "overdue";
+      return "not-started";
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = value;
     }
 
 function renderDashboard() {
@@ -859,6 +1174,11 @@ window.showPage = function(pageId) {
 
     },300);
 
+  }
+
+  if (pageId === "pageActionPlan") {
+    ensureActionPlanPageMarkup();
+    renderActionPlanDashboard();
   }
 
 
