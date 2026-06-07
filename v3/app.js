@@ -735,16 +735,28 @@ function renderKanban() {
     if (c) c.innerHTML = "";
   });
 
+  const counts = {
+    Planning: 0,
+    Fieldwork: 0,
+    Review: 0,
+    Follow: 0,
+    Closed: 0
+  };
+
   findings.forEach(f => {
+    let stage = "Fieldwork";
     let column = columns.Fieldwork;
 
-    if (f.status === "Open") column = columns.Planning;
-    if (f.status === "In Progress") column = columns.Fieldwork;
-    if (f.mapStatus === "Verified") column = columns.Review;
-    if (f.mapStatus === "Implemented") column = columns.Follow;
-    if (f.status === "Closed") column = columns.Closed;
+    if (f.status === "Open") stage = "Planning";
+    if (f.status === "In Progress") stage = "Fieldwork";
+    if (f.mapStatus === "Verified") stage = "Review";
+    if (f.mapStatus === "Implemented") stage = "Follow";
+    if (f.status === "Closed") stage = "Closed";
+
+    column = columns[stage];
 
     if (!column) return;
+    counts[stage]++;
 
     let riskClass = "kanban-risk-low";
     if (f.riskLevel === "High") riskClass = "kanban-risk-high";
@@ -753,13 +765,23 @@ function renderKanban() {
     column.innerHTML += `
       <div class="kanban-card ${riskClass}">
         <div class="kanban-card-title">${f.findingId || "-"}</div>
-        <div>${f.auditArea || ""}</div>
-        <hr>
-        <div>Risk: ${f.riskLevel || "-"}</div>
-        <div>Owner: ${getOwnerDisplayName(f)}</div>
-        <div>Due: ${f.dueDate || "-"}</div>
+        <div class="kanban-card-area">${f.auditArea || "-"}</div>
+        <div class="kanban-card-meta">
+          <span class="kanban-pill">${f.riskLevel || "-"}</span>
+          <span>${f.dueDate || "-"}</span>
+        </div>
+        <div class="kanban-card-owner">Owner: ${getOwnerDisplayName(f)}</div>
       </div>
     `;
+  });
+
+  Object.keys(columns).forEach(stage => {
+    const header = document.querySelector(`[data-kanban-stage="${stage}"]`);
+    if (header) header.innerText = counts[stage];
+
+    if (columns[stage] && counts[stage] === 0) {
+      columns[stage].innerHTML = `<div class="kanban-empty">No findings</div>`;
+    }
   });
 }
 /* ======================================

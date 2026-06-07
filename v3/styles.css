@@ -861,6 +861,124 @@ canvas {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Kanban Board */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: start;
+  overflow-x: auto;
+  padding: 8px 2px 12px;
+}
+
+.kanban-column {
+  min-width: 220px;
+  min-height: 560px;
+  padding: 14px;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  background: #020617;
+}
+
+.kanban-column h4 {
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #334155;
+  color: #f8fafc;
+  font-size: 14px;
+}
+
+.kanban-card {
+  position: relative;
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid #334155;
+  border-left-width: 4px;
+  border-radius: 14px;
+  background: #0f172a;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
+}
+
+.kanban-card-title {
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.kanban-card-area {
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.35;
+  margin-bottom: 12px;
+}
+
+.kanban-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.kanban-card-owner {
+  color: #e5e7eb;
+  font-size: 12px;
+}
+
+.kanban-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #1e293b;
+  color: #e5e7eb;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.kanban-risk-high {
+  border-left-color: #fb7185;
+}
+
+.kanban-risk-medium {
+  border-left-color: #f59e0b;
+}
+
+.kanban-risk-low {
+  border-left-color: #22c55e;
+}
+
+.kanban-empty {
+  padding: 18px 12px;
+  border: 1px dashed #334155;
+  border-radius: 12px;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 1200px) {
+  .kanban-board {
+    grid-template-columns: repeat(5, minmax(240px, 240px));
+  }
+}
+
+@media (max-width: 700px) {
+  .kanban-board {
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+  }
+
+  .kanban-column {
+    min-width: 0;
+    min-height: auto;
+  }
+}
 .risk-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
