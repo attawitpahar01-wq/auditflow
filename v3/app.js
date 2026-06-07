@@ -1010,20 +1010,26 @@ function listenAuditTeam() {
       const t = docSnap.data();
 
       body.innerHTML += `
-        <tr>
-          <td>${t.name || "-"}</td>
-          <td>${t.role || "-"}</td>
-          <td>${t.status || "-"}</td>
-          <td>
-            <button type="button" onclick="editAuditor('${docSnap.id}', '${t.name || ""}', '${t.role || ""}', '${t.status || ""}')">
-              Edit
-            </button>
-            <button type="button" onclick="deleteAuditor('${docSnap.id}')">
-              Delete
-            </button>
-          </td>
-        </tr>
-      `;
+  <tr>
+    <td>${t.name || "-"}</td>
+    <td>${t.role || "-"}</td>
+    <td>${t.status || "-"}</td>
+    <td>
+      <button type="button" onclick="editAuditor(
+        '${docSnap.id}',
+        '${t.name || ""}',
+        '${t.role || ""}',
+        '${t.status || ""}'
+      )">
+        Edit
+      </button>
+
+      <button type="button" onclick="deleteAuditor('${docSnap.id}')">
+        Delete
+      </button>
+    </td>
+  </tr>
+`;
     });
   });
 }
