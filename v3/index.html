@@ -476,7 +476,7 @@
     <div class="card">
       <h3>Dashboard Filter</h3>
       <div class="grid">
-        <select id="filterBranch" onchange="renderTable()">
+        <select id="registerFilterBranch" onchange="renderTable()">
           <option value="">ทุกสาขา</option>
           <option value="SPR">SPR</option>
           <option value="SRR">SRR</option>
@@ -487,14 +487,14 @@
           <option value="SPN">SPN</option>
         </select>
 
-        <select id="filterRisk" onchange="renderTable()">
+        <select id="registerFilterRisk" onchange="renderTable()">
           <option value="">ทุก Risk</option>
           <option value="High">High</option>
           <option value="Medium">Medium</option>
           <option value="Low">Low</option>
         </select>
 
-        <select id="filterStatus" onchange="renderTable()">
+        <select id="registerFilterStatus" onchange="renderTable()">
           <option value="">ทุก Status</option>
           <option value="Open">Open</option>
           <option value="In Progress">In Progress</option>
@@ -605,7 +605,7 @@ Branch Master Data
 
     <div class="team-form-grid">
 
-      <input type="hidden" id="teamMemberId">
+      <input type="hidden" id="editTeamId">
 
 
       <div class="form-group">
@@ -691,33 +691,33 @@ Branch Master Data
 
   </div>
 </div>
-  <!-- Team Management Modal -->
-<div id="teamModal" class="modal hidden">
+  <!-- Legacy Team Management Modal: kept inactive to avoid duplicate active DOM IDs -->
+<!-- <div id="teamModalLegacy" class="modal hidden legacy-hidden">
 
   <div class="modal-content">
 
     <div class="modal-header">
       <h2>👥 จัดการทีมตรวจสอบ</h2>
 
-      <button id="btnCloseTeamModal" class="close-btn">
+      <button id="btnCloseTeamModalLegacy" class="close-btn">
         ×
       </button>
     </div>
 
 
-    <input type="hidden" id="editTeamId">
+    <input type="hidden" id="editTeamIdLegacy">
 
 
     <label>ชื่อ Auditor</label>
     <input 
       type="text" 
-      id="auditorName"
+      id="auditorNameLegacy"
       placeholder="ชื่อผู้ตรวจสอบ"
     >
 
 
     <label>Role</label>
-    <select id="auditorRole">
+    <select id="auditorRoleLegacy">
 
       <option value="Supervisor">
         Supervisor
@@ -735,7 +735,7 @@ Branch Master Data
 
 
     <label>Status</label>
-    <select id="auditorStatus">
+    <select id="auditorStatusLegacy">
 
       <option value="Active">
         Active
@@ -748,7 +748,7 @@ Branch Master Data
     </select>
 
 
-    <button id="btnSaveTeam" class="btn-primary">
+    <button id="btnSaveTeamLegacy" class="btn-primary">
       💾 Save Auditor
     </button>
 
@@ -758,13 +758,13 @@ Branch Master Data
 
     <h3>สมาชิกทีม</h3>
 
-    <div id="teamList">
+    <div id="teamListLegacy">
     </div>
 
 
   </div>
 
-</div>
+</div> -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
