@@ -988,7 +988,7 @@ window.clearTeamForm = function () {
 };
 
 window.editAuditor = function (id, name, role, status) {
-  document.getElementById("teamMemberId").value = id;
+  document.getElementById("editTeamId").value = id;
   document.getElementById("auditorName").value = name;
   document.getElementById("auditorRole").value = role;
   document.getElementById("auditorStatus").value = status;
@@ -996,7 +996,10 @@ window.editAuditor = function (id, name, role, status) {
 
 window.deleteAuditor = async function (id) {
   if (!confirm("ยืนยันการลบ Auditor รายนี้?")) return;
-  await deleteDoc(doc(db, "auditTeam", id));
+
+  await deleteDoc(doc(db, "audit_team", id));
+
+  alert("ลบ Auditor เรียบร้อย");
 };
 
 function listenAuditTeam() {
