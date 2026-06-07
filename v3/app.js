@@ -111,8 +111,19 @@
     }
 
     function getDisplayableOwnerText(value) {
-      if (!value || isFirestoreDocumentId(value)) return "";
-      return value;
+      if (!value) return "";
+
+      const text = normalizeOwnerName(value);
+      if (!text || isFirestoreDocumentId(text)) return "";
+
+      return text;
+    }
+
+    function normalizeOwnerName(value) {
+      return String(value)
+        .replace(/^[\s"'`´‘’“”]+|[\s"'`´‘’“”]+$/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
     }
 
     function isFirestoreDocumentId(value) {
@@ -656,13 +667,15 @@ data[owner] =
 (data[owner] || 0) + 1;
 });
 let html="";
+const max = Math.max(...Object.values(data), 1);
 Object.keys(data).forEach(owner=>{
+const width = Math.max((data[owner] / max) * 100, 8);
 html += `
-<div class="bar-row">
+<div class="bar-row" style="display:grid;grid-template-columns:180px 1fr 48px;align-items:center;gap:12px;margin:10px 0;">
 <div>${owner}</div>
-<div class="bar-bg">
+<div class="bar-bg" style="height:10px;border-radius:999px;background:#1e293b;overflow:hidden;">
 <div class="bar-fill"
-style="width:${data[owner]*10}%">
+style="width:${width}%;height:100%;border-radius:999px;background:#38bdf8;">
 </div>
 </div>
 <div>${data[owner]}</div>
