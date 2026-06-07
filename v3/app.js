@@ -1120,3 +1120,88 @@ window.saveTeamMember = async function () {
   alert("บันทึกทีมสำเร็จ");
 
 };
+/* ==============================
+   Edit Audit Team
+============================== */
+
+window.editTeamMember = function (
+  id,
+  name,
+  role,
+  status
+) {
+
+  document.getElementById("editTeamId").value = id;
+
+  document.getElementById("auditorName").value = name;
+
+  document.getElementById("auditorRole").value = role;
+
+  document.getElementById("auditorStatus").value = status;
+
+};
+
+
+/* ==============================
+   Delete Audit Team
+============================== */
+
+window.deleteTeamMember = async function(id) {
+
+
+  if (!confirm("ต้องการลบ Auditor นี้หรือไม่?")) {
+    return;
+  }
+
+
+  await deleteDoc(
+    doc(db, "audit_team", id)
+  );
+
+
+  alert("ลบข้อมูลเรียบร้อย");
+
+};
+/* ==============================
+   Edit Auditor
+============================== */
+
+window.editAuditor = function (
+  id,
+  name,
+  role,
+  status
+) {
+
+  document.getElementById("editTeamId").value = id;
+
+  document.getElementById("auditorName").value = name;
+
+  document.getElementById("auditorRole").value = role;
+
+  document.getElementById("auditorStatus").value = status;
+
+};
+
+
+
+/* ==============================
+   Delete Auditor
+============================== */
+
+window.deleteAuditor = async function(id) {
+
+
+  if (!confirm("ต้องการลบ Auditor นี้หรือไม่?")) {
+    return;
+  }
+
+
+  await deleteDoc(
+    doc(db, "audit_team", id)
+  );
+
+
+  alert("ลบ Auditor เรียบร้อย");
+
+};
