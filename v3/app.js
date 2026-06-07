@@ -158,6 +158,14 @@
     }
 
     window.saveFinding = async function () {
+      const docId = getValue("docId");
+      const currentFinding = docId ? findings.find(f => f.id === docId) : null;
+
+      if (!canEditFinding(currentFinding)) {
+        alert("You do not have permission to save this finding");
+        return;
+      }
+
       const ownerSelect = document.getElementById("owner");
       const selectedOwner =
         ownerSelect && ownerSelect.selectedIndex >= 0
@@ -200,8 +208,6 @@
         updatedAt: serverTimestamp()
       };
 
-      const docId = getValue("docId");
-
       if (docId) {
         if (data.status === "Closed") {
           data.closedAt = serverTimestamp();
@@ -210,6 +216,10 @@
       } else {
         data.createdBy = currentUser.email;
         data.createdAt = serverTimestamp();
+        data.workflowStatus = "Draft";
+        data.supervisorReviewStatus = "Pending";
+        data.managerApprovalStatus = "Pending";
+        data.approvalHistory = [];
         await addDoc(collection(db, "audit_findings"), data);
       }
 
@@ -220,6 +230,11 @@
     window.editFinding = function (id) {
       const f = findings.find(x => x.id === id);
       if (!f) return;
+
+      if (!canEditFinding(f)) {
+        alert("You do not have permission to edit this finding");
+        return;
+      }
 
       setValue("docId", f.id);
       setValue("findingId", f.findingId);
@@ -246,7 +261,7 @@
     };
 
     window.deleteFinding = async function (id) {
-      if (!canDelete()) {
+      if (!canDeleteFinding()) {
         alert("You do not have permission to delete findings");
         return;
       }
@@ -271,7 +286,7 @@
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="11" class="table-empty">No findings found</td>
+            <td colspan="15" class="table-empty">No findings found</td>
           </tr>
         `;
         return;
@@ -281,6 +296,7 @@
         const aging = calculateAging(f.dueDate, f.status);
         const riskClass = f.riskLevel === "High" ? "risk-high" :
                           f.riskLevel === "Medium" ? "risk-medium" : "risk-low";
+        const workflowStatus = getWorkflowStatus(f);
 
         return `
           <tr>
@@ -294,11 +310,15 @@
             <td>${aging}</td>
             <td>${f.mapStatus || "-"}</td>
             <td>${f.progressPercent || 0}%</td>
+            <td><span class="workflow-badge ${getWorkflowStatusClass(workflowStatus)}">${workflowStatus}</span></td>
+            <td>${f.supervisorReviewStatus || "Pending"}</td>
+            <td>${f.managerApprovalStatus || "Pending"}</td>
+            <td>${renderApprovalActions(f)}</td>
             <td>
-              <button onclick="editFinding('${f.id}')">แก้ไข</button>
-              <button onclick="createActionPlanFromFinding('${f.id}')">Create Action Plan</button>
-              <button onclick="createEvidenceRequestFromFinding('${f.id}')">Create Evidence Request</button>
-              ${canDelete() ? `<button class="danger" onclick="deleteFinding('${f.id}')">ลบ</button>` : ""}
+              ${canEditFinding(f) ? `<button onclick="editFinding('${f.id}')">แก้ไข</button>` : ""}
+              ${canEditFinding(f) ? `<button onclick="createActionPlanFromFinding('${f.id}')">Create Action Plan</button>` : ""}
+              ${canEditFinding(f) ? `<button onclick="createEvidenceRequestFromFinding('${f.id}')">Create Evidence Request</button>` : ""}
+              ${canDeleteFinding() ? `<button class="danger" onclick="deleteFinding('${f.id}')">ลบ</button>` : ""}
             </td>
           </tr>
         `;
@@ -307,6 +327,175 @@
 
     function normalizeFilterValue(value) {
       return value === "All" ? "" : value;
+    }
+
+    function getWorkflowStatus(finding) {
+      if (finding?.workflowStatus) return finding.workflowStatus;
+      if (finding?.status === "Follow-up" || finding?.status === "Closed") return "Issued";
+      return "Draft";
+    }
+
+    function getWorkflowStatusClass(status) {
+      return String(status || "Draft")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+    }
+
+    function getApprovalHistory(finding) {
+      return Array.isArray(finding?.approvalHistory) ? finding.approvalHistory : [];
+    }
+
+    function createApprovalHistoryEntry(action, comment = "") {
+      return {
+        action,
+        by: currentUser?.email || "",
+        date: new Date(),
+        comment
+      };
+    }
+
+    function renderApprovalActions(finding) {
+      const status = getWorkflowStatus(finding);
+      const buttons = [];
+
+      if (canSubmitFinding(finding) && (status === "Draft" || status === "Rejected")) {
+        buttons.push(`<button type="button" onclick="submitFindingForReview('${finding.id}')">Submit for Review</button>`);
+      }
+
+      if (canSupervisorReview() && status === "Pending Supervisor Review") {
+        buttons.push(`<button type="button" onclick="approveSupervisorReview('${finding.id}')">Approve Review</button>`);
+        buttons.push(`<button type="button" class="danger" onclick="rejectSupervisorReview('${finding.id}')">Reject</button>`);
+      }
+
+      if (canManagerApprove() && status === "Pending Manager Approval") {
+        buttons.push(`<button type="button" onclick="approveManagerIssue('${finding.id}')">Approve Issue</button>`);
+        buttons.push(`<button type="button" class="danger" onclick="rejectManagerApproval('${finding.id}')">Reject</button>`);
+      }
+
+      buttons.push(`<button type="button" class="secondary" onclick="showApprovalHistory('${finding.id}')">History</button>`);
+      return buttons.join(" ");
+    }
+
+    async function updateFindingWorkflow(findingId, updates, action, comment = "") {
+      const finding = findings.find(f => f.id === findingId);
+      if (!finding) {
+        alert("Finding not found");
+        return;
+      }
+
+      await updateDoc(doc(db, "audit_findings", findingId), {
+        ...updates,
+        approvalHistory: [
+          ...getApprovalHistory(finding),
+          createApprovalHistoryEntry(action, comment)
+        ],
+        updatedAt: serverTimestamp()
+      });
+    }
+
+    window.submitFindingForReview = async function (findingId) {
+      const finding = findings.find(f => f.id === findingId);
+      if (!finding) return alert("Finding not found");
+      if (!canSubmitFinding(finding)) return alert("You do not have permission to submit this finding");
+
+      const status = getWorkflowStatus(finding);
+      if (status !== "Draft" && status !== "Rejected") return alert("This finding cannot be submitted now");
+
+      await updateFindingWorkflow(findingId, {
+        workflowStatus: "Pending Supervisor Review",
+        supervisorReviewStatus: "Pending",
+        supervisorReviewBy: "",
+        supervisorReviewDate: "",
+        supervisorReviewComment: "",
+        managerApprovalStatus: "Pending",
+        managerApprovalBy: "",
+        managerApprovalDate: "",
+        managerApprovalComment: "",
+        rejectedReason: ""
+      }, "Submitted for Supervisor Review");
+    };
+
+    window.approveSupervisorReview = async function (findingId) {
+      if (!canSupervisorReview()) return alert("Only Supervisor can approve supervisor review");
+
+      await updateFindingWorkflow(findingId, {
+        workflowStatus: "Pending Manager Approval",
+        supervisorReviewStatus: "Approved",
+        supervisorReviewBy: currentUser?.email || "",
+        supervisorReviewDate: serverTimestamp(),
+        supervisorReviewComment: ""
+      }, "Supervisor Review Approved");
+    };
+
+    window.rejectSupervisorReview = async function (findingId) {
+      if (!canSupervisorReview()) return alert("Only Supervisor can reject supervisor review");
+
+      const comment = prompt("Reject reason") || "";
+      if (!comment.trim()) return;
+
+      await updateFindingWorkflow(findingId, {
+        workflowStatus: "Rejected",
+        supervisorReviewStatus: "Rejected",
+        supervisorReviewBy: currentUser?.email || "",
+        supervisorReviewDate: serverTimestamp(),
+        supervisorReviewComment: comment,
+        rejectedReason: comment
+      }, "Supervisor Review Rejected", comment);
+    };
+
+    window.approveManagerIssue = async function (findingId) {
+      if (!canManagerApprove()) return alert("Only Audit Manager can approve issue");
+
+      await updateFindingWorkflow(findingId, {
+        workflowStatus: "Issued",
+        managerApprovalStatus: "Approved",
+        managerApprovalBy: currentUser?.email || "",
+        managerApprovalDate: serverTimestamp(),
+        managerApprovalComment: "",
+        issuedDate: serverTimestamp(),
+        status: "Follow-up"
+      }, "Manager Issue Approved");
+    };
+
+    window.rejectManagerApproval = async function (findingId) {
+      if (!canManagerApprove()) return alert("Only Audit Manager can reject manager approval");
+
+      const comment = prompt("Reject reason") || "";
+      if (!comment.trim()) return;
+
+      await updateFindingWorkflow(findingId, {
+        workflowStatus: "Rejected",
+        managerApprovalStatus: "Rejected",
+        managerApprovalBy: currentUser?.email || "",
+        managerApprovalDate: serverTimestamp(),
+        managerApprovalComment: comment,
+        rejectedReason: comment
+      }, "Manager Approval Rejected", comment);
+    };
+
+    window.showApprovalHistory = function (findingId) {
+      const finding = findings.find(f => f.id === findingId);
+      if (!finding) return alert("Finding not found");
+
+      const history = getApprovalHistory(finding);
+      if (history.length === 0) {
+        alert("No approval history");
+        return;
+      }
+
+      alert(history.map(item => {
+        const date = formatApprovalHistoryDate(item.date);
+        const comment = item.comment ? `\nComment: ${item.comment}` : "";
+        return `${date}\n${item.action || "-"}\nBy: ${item.by || "-"}${comment}`;
+      }).join("\n\n"));
+    };
+
+    function formatApprovalHistoryDate(value) {
+      if (!value) return "-";
+      if (typeof value?.toDate === "function") return value.toDate().toLocaleString();
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
     }
 
     function getOwnerFormValue(f) {
@@ -324,6 +513,10 @@
       const finding = findings.find(f => f.id === findingDocId);
       if (!finding) {
         alert("Finding not found");
+        return;
+      }
+      if (!canEditOperationalData()) {
+        alert("You do not have permission to create action plans");
         return;
       }
 
@@ -561,7 +754,7 @@
             <td>${plan.iaVerificationStatus || "-"}</td>
             <td>${evidence}</td>
             <td>
-              <button onclick="editActionPlan('${plan.id}')">Edit</button>
+              ${canEditOperationalData() ? `<button onclick="editActionPlan('${plan.id}')">Edit</button>` : ""}
               ${canDelete() ? `<button class="danger" onclick="deleteActionPlan('${plan.id}')">Delete</button>` : ""}
             </td>
           </tr>
@@ -570,6 +763,11 @@
     }
 
     window.editActionPlan = function (id) {
+      if (!canEditOperationalData()) {
+        alert("You do not have permission to edit action plans");
+        return;
+      }
+
       const plan = actionPlans.find(p => p.id === id);
       if (!plan) return;
 
@@ -592,6 +790,11 @@
     };
 
     window.saveActionPlanEdit = async function () {
+      if (!canEditOperationalData()) {
+        alert("You do not have permission to edit action plans");
+        return;
+      }
+
       const id = getValue("actionPlanEditId");
       if (!id) return;
 
@@ -651,6 +854,10 @@
       const finding = findings.find(f => f.id === findingDocId);
       if (!finding) {
         alert("Finding not found");
+        return;
+      }
+      if (!canEditOperationalData()) {
+        alert("You do not have permission to create evidence requests");
         return;
       }
 
@@ -869,13 +1076,18 @@
             <td>${e.dueDate || "-"}</td>
             <td><span class="evidence-status ${getEvidenceStatusClass(e.status)}">${e.status || "-"}</span></td>
             <td>${link}</td>
-            <td><button onclick="editEvidence('${e.id}')">Edit</button></td>
+            <td>${canEditOperationalData() ? `<button onclick="editEvidence('${e.id}')">Edit</button>` : ""}</td>
           </tr>
         `;
       }).join("");
     }
 
     window.editEvidence = function (id) {
+      if (!canEditOperationalData()) {
+        alert("You do not have permission to edit evidence");
+        return;
+      }
+
       const evidence = evidenceRecords.find(e => e.id === id);
       if (!evidence) return;
 
@@ -897,6 +1109,11 @@
     };
 
     window.saveEvidenceEdit = async function () {
+      if (!canEditOperationalData()) {
+        alert("You do not have permission to edit evidence");
+        return;
+      }
+
       const id = getValue("evidenceEditId");
       if (!id) return;
 
@@ -1473,15 +1690,11 @@
     }
 
     function canEdit() {
-      const role = getCurrentUserRole();
-      if (!role) return true;
-      return ["Supervisor", "Senior Auditor", "Auditor"].includes(role);
+      return canEditFinding();
     }
 
     function canDelete() {
-      const role = getCurrentUserRole();
-      if (!role) return true;
-      return role === "Supervisor";
+      return canDeleteFinding();
     }
 
     function canManageSetting() {
@@ -1493,7 +1706,57 @@
     function canViewReport() {
       const role = getCurrentUserRole();
       if (!role) return true;
-      return ["Supervisor", "Senior Auditor", "Auditor", "Management Viewer"].includes(role);
+      return ["Audit Manager", "Supervisor", "Senior Auditor", "Auditor", "Management Viewer"].includes(role);
+    }
+
+    function canSubmitFinding(finding = null) {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+      if (role === "Senior Auditor") return true;
+      if (role === "Auditor") return canEditFinding(finding);
+      return false;
+    }
+
+    function canSupervisorReview() {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+      return role === "Supervisor";
+    }
+
+    function canManagerApprove() {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+      return role === "Audit Manager";
+    }
+
+    function canEditFinding(finding = null) {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+
+      if (["Audit Manager", "Supervisor", "Senior Auditor"].includes(role)) return true;
+      if (role === "Auditor") {
+        const status = finding ? getWorkflowStatus(finding) : null;
+        if (!finding) return true;
+        const ownerEmail = finding.ownerId ? teamMembersById[finding.ownerId]?.email : "";
+        const isOwnFinding =
+          finding.createdBy === currentUser?.email ||
+          ownerEmail === currentUser?.email;
+        return isOwnFinding && (status === "Draft" || status === "Rejected");
+      }
+
+      return false;
+    }
+
+    function canDeleteFinding() {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+      return role === "Supervisor";
+    }
+
+    function canEditOperationalData() {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+      return ["Audit Manager", "Supervisor", "Senior Auditor", "Auditor"].includes(role);
     }
 
     window.getCurrentUserRole = getCurrentUserRole;
@@ -1501,13 +1764,21 @@
     window.canDelete = canDelete;
     window.canManageSetting = canManageSetting;
     window.canViewReport = canViewReport;
+    window.canSubmitFinding = canSubmitFinding;
+    window.canSupervisorReview = canSupervisorReview;
+    window.canManagerApprove = canManagerApprove;
+    window.canEditFinding = canEditFinding;
+    window.canDeleteFinding = canDeleteFinding;
+    window.canEditOperationalData = canEditOperationalData;
 
     function canAccessPage(pageId) {
       const role = getCurrentUserRole();
       if (!role) return true;
 
+      if (pageId === "pageSetting") return canManageSetting();
+
       if (role === "Management Viewer") {
-        return pageId === "pageDashboard" || pageId === "pageReport";
+        return ["pageDashboard", "pageRegister", "pageActionPlan", "pageEvidence", "pageReport"].includes(pageId);
       }
 
       return true;
@@ -1528,7 +1799,12 @@
       if (role === "Management Viewer") {
         document.querySelectorAll(".sidebar button").forEach(btn => {
           const click = btn.getAttribute("onclick") || "";
-          const allowed = click.includes("pageDashboard") || click.includes("pageReport");
+          const allowed =
+            click.includes("pageDashboard") ||
+            click.includes("pageRegister") ||
+            click.includes("pageActionPlan") ||
+            click.includes("pageEvidence") ||
+            click.includes("pageReport");
           btn.style.display = allowed ? "" : "none";
         });
       }
@@ -1558,6 +1834,7 @@
                 <div>
                   <label>System Role</label>
                   <select id="systemUserRole">
+                    <option value="Audit Manager">Audit Manager</option>
                     <option value="Supervisor">Supervisor</option>
                     <option value="Senior Auditor">Senior Auditor</option>
                     <option value="Auditor">Auditor</option>
@@ -2500,7 +2777,7 @@ function renderKanban() {
 window.showPage = function(pageId) {
 
   if (!canAccessPage(pageId)) {
-    alert("Management Viewer can access Dashboard and Report only");
+    alert("You do not have permission to access this page");
     pageId = "pageDashboard";
   }
 
