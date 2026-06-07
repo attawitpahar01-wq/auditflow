@@ -39,6 +39,7 @@
     let findings = [];
     let filteredFindings = [];
     let teamMembersById = {};
+    let teamMembersByName = {};
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
     const appDiv = document.getElementById("app");
@@ -116,14 +117,19 @@
       const text = normalizeOwnerName(value);
       if (!text || isFirestoreDocumentId(text)) return "";
 
-      return text;
+      return teamMembersByName[getOwnerNameKey(text)]?.name || text;
     }
 
     function normalizeOwnerName(value) {
       return String(value)
-        .replace(/^[\s"'`´‘’“”]+|[\s"'`´‘’“”]+$/g, "")
+        .normalize("NFKC")
+        .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")
         .replace(/\s+/g, " ")
         .trim();
+    }
+
+    function getOwnerNameKey(value) {
+      return normalizeOwnerName(value).toLowerCase();
     }
 
     function isFirestoreDocumentId(value) {
@@ -1102,10 +1108,15 @@ function listenAuditTeam() {
   onSnapshot(query(teamRef, orderBy("name")), (snapshot) => {
     body.innerHTML = "";
     const nextTeamMembersById = {};
+    const nextTeamMembersByName = {};
 
     snapshot.forEach((docSnap) => {
       const t = docSnap.data();
       nextTeamMembersById[docSnap.id] = t;
+      const nameKey = getOwnerNameKey(t.name || "");
+      if (nameKey) {
+        nextTeamMembersByName[nameKey] = t;
+      }
 
       body.innerHTML += `
   <tr>
@@ -1131,6 +1142,7 @@ function listenAuditTeam() {
     });
 
     teamMembersById = nextTeamMembersById;
+    teamMembersByName = nextTeamMembersByName;
     renderDashboard();
     renderTable();
   });
@@ -1308,10 +1320,15 @@ function loadOwnerDropdown() {
         </option>
       `;
       const nextTeamMembersById = {};
+      const nextTeamMembersByName = {};
 
       snapshot.forEach((docSnap) => {
         const t = docSnap.data();
         nextTeamMembersById[docSnap.id] = t;
+        const nameKey = getOwnerNameKey(t.name || "");
+        if (nameKey) {
+          nextTeamMembersByName[nameKey] = t;
+        }
 
         if (t.status === "Active") {
         ownerSelect.innerHTML += `
@@ -1327,6 +1344,10 @@ function loadOwnerDropdown() {
       teamMembersById = {
         ...teamMembersById,
         ...nextTeamMembersById
+      };
+      teamMembersByName = {
+        ...teamMembersByName,
+        ...nextTeamMembersByName
       };
       renderDashboard();
       renderTable();
