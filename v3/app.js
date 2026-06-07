@@ -213,7 +213,7 @@
       setValue("riskLevel", f.riskLevel);
       setValue("impact", f.impact);
       setValue("likelihood", f.likelihood);
-      setValue("owner", f.ownerId || f.owner);
+      setValue("owner", getOwnerFormValue(f));
       setValue("dueDate", f.dueDate);
       setValue("status", f.status);
       setValue("evidenceLink", f.evidenceLink);
@@ -221,6 +221,7 @@
       setValue("revisedDueDate", f.revisedDueDate);
       setValue("progressPercent", f.progressPercent);
       setValue("mapStatus", f.mapStatus);
+      showPage("pageForm");
       window.scrollTo(0, 0);
     };
 
@@ -280,6 +281,17 @@
 
     function normalizeFilterValue(value) {
       return value === "All" ? "" : value;
+    }
+
+    function getOwnerFormValue(f) {
+      if (!f) return "";
+      if (f.ownerId) return f.ownerId;
+      if (f.owner && teamMembersById[f.owner]) return f.owner;
+
+      const ownerName = getDisplayableOwnerText(f.ownerName || f.owner);
+      if (!ownerName) return "";
+
+      return teamMembersByName[getOwnerNameKey(ownerName)]?.id || ownerName;
     }
 
 function renderDashboard() {
@@ -1148,7 +1160,10 @@ function listenAuditTeam() {
     const nextTeamMembersByName = {};
 
     snapshot.forEach((docSnap) => {
-      const t = docSnap.data();
+      const t = {
+        id: docSnap.id,
+        ...docSnap.data()
+      };
       nextTeamMembersById[docSnap.id] = t;
       const nameKey = getOwnerNameKey(t.name || "");
       if (nameKey) {
@@ -1347,10 +1362,12 @@ function loadOwnerDropdown() {
   const ownerSelect = document.getElementById("owner");
 
   if (!ownerSelect) return;
+  const selectedOwnerId = ownerSelect.value;
 
   onSnapshot(
     query(collection(db, "audit_team"), orderBy("name")),
     (snapshot) => {
+      const currentOwnerId = ownerSelect.value || selectedOwnerId;
       ownerSelect.innerHTML = `
         <option value="">
           -- เลือกผู้รับผิดชอบ --
@@ -1360,7 +1377,10 @@ function loadOwnerDropdown() {
       const nextTeamMembersByName = {};
 
       snapshot.forEach((docSnap) => {
-        const t = docSnap.data();
+        const t = {
+          id: docSnap.id,
+          ...docSnap.data()
+        };
         nextTeamMembersById[docSnap.id] = t;
         const nameKey = getOwnerNameKey(t.name || "");
         if (nameKey) {
@@ -1377,6 +1397,10 @@ function loadOwnerDropdown() {
       </option>`;
         }
       });
+
+      if (currentOwnerId) {
+        ownerSelect.value = currentOwnerId;
+      }
 
       teamMembersById = {
         ...teamMembersById,
