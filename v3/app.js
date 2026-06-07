@@ -1246,11 +1246,13 @@ function loadOwnerDropdown() {
         const t = docSnap.data();
 
         if (t.status === "Active") {
-          ownerSelect.innerHTML += `
-            <option value="${t.name}">
-              ${t.name} (${t.role})
-            </option>
-          `;
+        ownerSelect.innerHTML += `
+        <option 
+        value="${docSnap.id}"
+        data-name="${t.name}"
+        data-role="${t.role}">
+        ${t.name} (${t.role})
+      </option>`;
         }
       });
     }
