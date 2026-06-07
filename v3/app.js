@@ -71,7 +71,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
     });
 
     function listenFindings() {
-      const q = query((db, "audit_findings"), orderBy("createdAt", "desc"));
+      const q = query(
+  collection(db, "audit_findings"),
+  orderBy("createdAt", "desc")
+);
 
       onSnapshot(q, (snapshot) => {
         findings = snapshot.docs.map(d => ({
