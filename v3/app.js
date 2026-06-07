@@ -1029,3 +1029,30 @@ function listenAuditTeam() {
 }
 
 listenAuditTeam();
+/* ==============================
+   Team Management Modal
+============================== */
+
+const btnManageTeam = document.getElementById("btnManageTeam");
+const teamModal = document.getElementById("teamModal");
+const btnCloseTeamModal = document.getElementById("btnCloseTeamModal");
+
+if (btnManageTeam) {
+  btnManageTeam.addEventListener("click", () => {
+    teamModal.classList.remove("hidden");
+  });
+}
+
+if (btnCloseTeamModal) {
+  btnCloseTeamModal.addEventListener("click", () => {
+    teamModal.classList.add("hidden");
+  });
+}
+
+if (teamModal) {
+  teamModal.addEventListener("click", (event) => {
+    if (event.target === teamModal) {
+      teamModal.classList.add("hidden");
+    }
+  });
+}
