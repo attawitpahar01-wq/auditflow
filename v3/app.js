@@ -1178,7 +1178,7 @@ window.editAuditor = function (
   status
 ) {
 
-  document.getElementById("editTeamId").value = id;
+  document.getElementById("editTeamId").value = Id;
 
   document.getElementById("auditorName").value = name;
 
