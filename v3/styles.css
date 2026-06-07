@@ -1086,3 +1086,140 @@ canvas {
   display:none !important;
 
 }
+/* ==============================
+   Team Management Modal
+============================== */
+
+.modal.hidden {
+  display: none;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: #ffffff;
+  width: 720px;
+  max-width: 92%;
+  max-height: 88vh;
+  overflow-y: auto;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #1e293b;
+}
+
+.close-btn {
+  border: none;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 26px;
+  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+}
+
+.modal-content label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.modal-content input,
+.modal-content select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+#btnSaveTeam {
+  margin-top: 18px;
+  width: 100%;
+}
+
+#teamList {
+  margin-top: 14px;
+}
+
+.team-item {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 0.8fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.team-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.team-role {
+  color: #475569;
+}
+
+.team-status {
+  font-weight: 700;
+}
+
+.team-status.active {
+  color: #15803d;
+}
+
+.team-status.inactive {
+  color: #b91c1c;
+}
+
+.team-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-small {
+  border: none;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-edit {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+}
