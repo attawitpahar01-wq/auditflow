@@ -702,24 +702,27 @@ function renderKanban() {
 
 window.showPage = function(pageId) {
 
-    // ซ่อนทุกหน้า
-    document.querySelectorAll(".page-section").forEach(page => {
+  document.querySelectorAll(".page-section").forEach(page => {
+    page.classList.add("hidden");
+    page.classList.remove("active-page");
+    page.style.display = "none";
+  });
 
-        page.classList.remove("active-page");
-        page.style.display = "none";
+  const target = document.getElementById(pageId);
 
-    });
+  if (target) {
+    target.classList.remove("hidden");
+    target.classList.add("active-page");
+    target.style.display = "block";
+  }
 
+  if (pageId === "pageForm") {
+    setTimeout(() => {
+      window.loadOwnerDropdown();
+    }, 300);
+  }
 
-    // เปิดหน้าที่เลือก
-    const target = document.getElementById(pageId);
-
-    if (target) {
-
-        target.classList.add("active-page");
-        target.style.display = "block";
-
-    }
+};
 
 
     // active menu
