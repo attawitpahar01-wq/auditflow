@@ -699,53 +699,80 @@ function renderKanban() {
 /* ======================================
    AuditFlow V3 Final Page Navigation
 ====================================== */
-
 window.showPage = function(pageId) {
 
+
+  // ซ่อนทุกหน้า
   document.querySelectorAll(".page-section").forEach(page => {
+
     page.classList.add("hidden");
+
     page.classList.remove("active-page");
+
     page.style.display = "none";
+
   });
 
+
+
+  // เปิดหน้าที่เลือก
   const target = document.getElementById(pageId);
 
+
   if (target) {
+
     target.classList.remove("hidden");
+
     target.classList.add("active-page");
+
     target.style.display = "block";
+
   }
 
+
+
+  // โหลด Owner เมื่อเข้า Add/Edit Finding
   if (pageId === "pageForm") {
+
     setTimeout(() => {
-      window.loadOwnerDropdown();
-    }, 300);
+
+      if (window.loadOwnerDropdown) {
+
+        window.loadOwnerDropdown();
+
+      }
+
+    },300);
+
   }
 
+
+
+  // active menu
+  document.querySelectorAll(".sidebar button").forEach(btn => {
+
+    btn.classList.remove("active");
+
+
+    const click =
+      btn.getAttribute("onclick") || "";
+
+
+    if (click.includes(pageId)) {
+
+      btn.classList.add("active");
+
+    }
+
+
+  });
+
+
+
+  window.scrollTo(0,0);
+
+
 };
-
-
-    // active menu
-    document.querySelectorAll(".sidebar button").forEach(btn => {
-
-        btn.classList.remove("active");
-
-        const click = btn.getAttribute("onclick") || "";
-
-        if (click.includes(pageId)) {
-
-            btn.classList.add("active");
-
-        }
-
-    });
-
-
-    window.scrollTo(0,0);
-
-};
-
-
 /* หน้าแรก */
 document.addEventListener("DOMContentLoaded", () => {
 
