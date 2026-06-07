@@ -93,6 +93,7 @@
           
         renderDashboard();
         renderTable();
+        if (document.getElementById("reportTable")) loadAuditReport();
       });
     }
 
@@ -373,6 +374,7 @@
         }));
 
         renderActionPlanDashboard();
+        if (document.getElementById("reportTable")) loadAuditReport();
       });
     }
 
@@ -685,6 +687,7 @@
         }));
 
         renderEvidenceCenter();
+        if (document.getElementById("reportTable")) loadAuditReport();
       });
     }
 
@@ -892,6 +895,390 @@
       if (status === "Rejected") return "rejected";
       if (status === "Need More Info") return "need-info";
       return "pending";
+    }
+
+    window.loadAuditReport = function () {
+      ensureReportPageMarkup();
+      populateReportFilters();
+
+      const rows = getFilteredReportRows();
+      renderReportKPIs(rows);
+      renderReportTable(rows);
+      renderAuditCommitteeSummary(rows);
+    };
+
+    function ensureReportPageMarkup() {
+      const page = document.getElementById("pageReport");
+      if (!page || document.getElementById("reportTable")) return;
+
+      page.innerHTML = `
+        <div class="card">
+          <h3>Audit Report Center</h3>
+
+          <div class="report-kpis">
+            <div class="report-kpi">
+              <span>Total Findings</span>
+              <strong id="reportTotalFindings">0</strong>
+            </div>
+            <div class="report-kpi">
+              <span>High Risk Findings</span>
+              <strong id="reportHighRisk">0</strong>
+            </div>
+            <div class="report-kpi">
+              <span>Open Findings</span>
+              <strong id="reportOpenFindings">0</strong>
+            </div>
+            <div class="report-kpi">
+              <span>Closed Findings</span>
+              <strong id="reportClosedFindings">0</strong>
+            </div>
+            <div class="report-kpi">
+              <span>Overdue Action Plans</span>
+              <strong id="reportOverdueActions">0</strong>
+            </div>
+          </div>
+
+          <div class="report-filter-grid">
+            <div>
+              <label>Year</label>
+              <select id="reportFilterYear" onchange="loadAuditReport()"></select>
+            </div>
+            <div>
+              <label>Branch</label>
+              <select id="reportFilterBranch" onchange="loadAuditReport()"></select>
+            </div>
+            <div>
+              <label>Audit Area</label>
+              <select id="reportFilterAuditArea" onchange="loadAuditReport()"></select>
+            </div>
+            <div>
+              <label>Risk Level</label>
+              <select id="reportFilterRisk" onchange="loadAuditReport()"></select>
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="reportFilterStatus" onchange="loadAuditReport()"></select>
+            </div>
+            <div>
+              <label>Owner</label>
+              <select id="reportFilterOwner" onchange="loadAuditReport()"></select>
+            </div>
+          </div>
+
+          <div class="report-actions">
+            <button type="button" onclick="exportAuditExcel()">Export Excel</button>
+            <button type="button" onclick="exportAuditPDF()">Export PDF</button>
+          </div>
+
+          <div class="report-summary-grid">
+            <div>
+              <h4>Executive Summary</h4>
+              <div id="reportExecutiveSummary"></div>
+            </div>
+            <div>
+              <h4>Top High Risk Issues</h4>
+              <div id="reportTopHighRisk"></div>
+            </div>
+            <div>
+              <h4>Aging Summary</h4>
+              <div id="reportAgingSummary"></div>
+            </div>
+            <div>
+              <h4>Outstanding Corrective Actions</h4>
+              <div id="reportOutstandingActions"></div>
+            </div>
+          </div>
+
+          <div class="report-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Finding ID</th>
+                  <th>Branch</th>
+                  <th>Audit Area</th>
+                  <th>Risk Level</th>
+                  <th>Condition</th>
+                  <th>Owner</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
+                  <th>Action Status</th>
+                  <th>Evidence Status</th>
+                </tr>
+              </thead>
+              <tbody id="reportTable"></tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function getReportRows() {
+      const plansByFinding = {};
+      actionPlans.forEach(plan => {
+        if (plan.findingDocId && !plansByFinding[plan.findingDocId]) {
+          plansByFinding[plan.findingDocId] = plan;
+        }
+      });
+
+      const evidenceByFinding = {};
+      evidenceRecords.forEach(evidence => {
+        if (evidence.findingDocId && !evidenceByFinding[evidence.findingDocId]) {
+          evidenceByFinding[evidence.findingDocId] = evidence;
+        }
+      });
+
+      return findings.map(finding => {
+        const plan = plansByFinding[finding.id] || {};
+        const evidence = evidenceByFinding[finding.id] || {};
+
+        return {
+          findingDocId: finding.id,
+          findingId: finding.findingId || "",
+          year: getReportYear(finding),
+          branch: finding.branch || "",
+          auditArea: finding.auditArea || "",
+          riskLevel: finding.riskLevel || "",
+          condition: finding.condition || "",
+          owner: getOwnerDisplayName(finding),
+          status: finding.status || "",
+          dueDate: finding.dueDate || "",
+          actionStatus: plan.id ? getCalculatedActionStatus(plan) : "-",
+          evidenceStatus: evidence.status || "-",
+          actionPlan: plan,
+          evidence
+        };
+      });
+    }
+
+    function getFilteredReportRows() {
+      const year = getReportFilterValue("reportFilterYear");
+      const branch = getReportFilterValue("reportFilterBranch");
+      const auditArea = getReportFilterValue("reportFilterAuditArea");
+      const risk = getReportFilterValue("reportFilterRisk");
+      const status = getReportFilterValue("reportFilterStatus");
+      const owner = getReportFilterValue("reportFilterOwner");
+
+      return getReportRows().filter(row =>
+        (!year || row.year === year) &&
+        (!branch || row.branch === branch) &&
+        (!auditArea || row.auditArea === auditArea) &&
+        (!risk || row.riskLevel === risk) &&
+        (!status || row.status === status) &&
+        (!owner || row.owner === owner)
+      );
+    }
+
+    function populateReportFilters() {
+      const rows = getReportRows();
+      setReportSelectOptions("reportFilterYear", uniqueSorted(rows.map(r => r.year).filter(Boolean)), "All Years");
+      setReportSelectOptions("reportFilterBranch", uniqueSorted(rows.map(r => r.branch).filter(Boolean)), "All Branches");
+      setReportSelectOptions("reportFilterAuditArea", uniqueSorted(rows.map(r => r.auditArea).filter(Boolean)), "All Audit Areas");
+      setReportSelectOptions("reportFilterRisk", ["High", "Medium", "Low"], "All Risk Levels");
+      setReportSelectOptions("reportFilterStatus", uniqueSorted(rows.map(r => r.status).filter(Boolean)), "All Statuses");
+      setReportSelectOptions("reportFilterOwner", uniqueSorted(rows.map(r => r.owner).filter(Boolean)), "All Owners");
+    }
+
+    function setReportSelectOptions(id, values, allLabel) {
+      const select = document.getElementById(id);
+      if (!select) return;
+
+      const selected = select.value;
+      select.innerHTML = `<option value="">${allLabel}</option>` +
+        values.map(value => `<option value="${value}">${value}</option>`).join("");
+
+      if (values.includes(selected)) select.value = selected;
+    }
+
+    function renderReportKPIs(rows) {
+      setText("reportTotalFindings", rows.length);
+      setText("reportHighRisk", rows.filter(r => r.riskLevel === "High").length);
+      setText("reportOpenFindings", rows.filter(r => r.status !== "Closed").length);
+      setText("reportClosedFindings", rows.filter(r => r.status === "Closed").length);
+      setText("reportOverdueActions", rows.filter(r => r.actionStatus === "Overdue").length);
+    }
+
+    function renderReportTable(rows) {
+      const tbody = document.getElementById("reportTable");
+      if (!tbody) return;
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="10" class="table-empty">No report data found</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(row => `
+        <tr>
+          <td>${row.findingId || "-"}</td>
+          <td>${row.branch || "-"}</td>
+          <td>${row.auditArea || "-"}</td>
+          <td>${row.riskLevel || "-"}</td>
+          <td>${row.condition || "-"}</td>
+          <td>${row.owner || "-"}</td>
+          <td>${row.status || "-"}</td>
+          <td>${row.dueDate || "-"}</td>
+          <td>${row.actionStatus || "-"}</td>
+          <td>${row.evidenceStatus || "-"}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderAuditCommitteeSummary(rows) {
+      const total = rows.length;
+      const highRisk = rows.filter(r => r.riskLevel === "High");
+      const open = rows.filter(r => r.status !== "Closed");
+      const overdueActions = rows.filter(r => r.actionStatus === "Overdue");
+
+      setHtml("reportExecutiveSummary", `
+        <p>${total} findings in scope. ${open.length} remain open and ${highRisk.length} are high risk.</p>
+      `);
+
+      setHtml("reportTopHighRisk", listHtml(
+        highRisk.slice(0, 5).map(r => `${r.findingId || "-"} - ${r.auditArea || "-"} (${r.owner || "-"})`)
+      ));
+
+      setHtml("reportAgingSummary", `
+        <p>0-30 days: ${countAgingBucket(rows, 0, 30)}</p>
+        <p>31-60 days: ${countAgingBucket(rows, 31, 60)}</p>
+        <p>Over 60 days: ${countAgingBucket(rows, 61, Infinity)}</p>
+      `);
+
+      setHtml("reportOutstandingActions", listHtml(
+        overdueActions.slice(0, 5).map(r => `${r.findingId || "-"} - ${r.actionStatus} (${r.dueDate || "-"})`)
+      ));
+    }
+
+    window.exportAuditExcel = function () {
+      if (!window.XLSX) {
+        alert("SheetJS library is not loaded");
+        return;
+      }
+
+      const rows = getFilteredReportRows().map(row => ({
+        "Finding ID": row.findingId,
+        Branch: row.branch,
+        "Audit Area": row.auditArea,
+        "Risk Level": row.riskLevel,
+        Condition: row.condition,
+        Owner: row.owner,
+        Status: row.status,
+        "Due Date": row.dueDate,
+        "Action Status": row.actionStatus,
+        "Evidence Status": row.evidenceStatus
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Finding Summary");
+      XLSX.writeFile(workbook, `AuditFlow_Report_${getTodayStamp()}.xlsx`);
+    };
+
+    window.exportAuditPDF = function () {
+      const jsPDF = window.jspdf?.jsPDF;
+      if (!jsPDF) {
+        alert("jsPDF library is not loaded");
+        return;
+      }
+
+      const rows = getFilteredReportRows();
+      const doc = new jsPDF();
+      const high = rows.filter(r => r.riskLevel === "High");
+      const medium = rows.filter(r => r.riskLevel === "Medium");
+      const low = rows.filter(r => r.riskLevel === "Low");
+      const openHigh = rows.filter(r => r.riskLevel === "High" && r.status !== "Closed");
+      const overdueActions = rows.filter(r => r.actionStatus === "Overdue");
+
+      let y = 14;
+      doc.setFontSize(16);
+      doc.text("Audit Committee Report", 14, y);
+      y += 10;
+
+      doc.setFontSize(11);
+      [
+        `Total Findings: ${rows.length}`,
+        `High Risk Findings: ${high.length}`,
+        `Open Findings: ${rows.filter(r => r.status !== "Closed").length}`,
+        `Closed Findings: ${rows.filter(r => r.status === "Closed").length}`,
+        `Overdue Action Plans: ${overdueActions.length}`,
+        `Risk Summary: High ${high.length}, Medium ${medium.length}, Low ${low.length}`
+      ].forEach(line => {
+        doc.text(line, 14, y);
+        y += 7;
+      });
+
+      y += 4;
+      doc.setFontSize(13);
+      doc.text("Open High Risk", 14, y);
+      y += 8;
+      doc.setFontSize(10);
+      addPdfLines(doc, openHigh.map(r => `${r.findingId || "-"} - ${r.auditArea || "-"} - ${r.owner || "-"}`), y);
+
+      y = 150;
+      doc.setFontSize(13);
+      doc.text("Overdue Action Plans", 14, y);
+      y += 8;
+      doc.setFontSize(10);
+      addPdfLines(doc, overdueActions.map(r => `${r.findingId || "-"} - ${r.auditArea || "-"} - Due ${r.dueDate || "-"}`), y);
+
+      doc.save(`AuditFlow_Report_${getTodayStamp()}.pdf`);
+    };
+
+    function getReportFilterValue(id) {
+      return document.getElementById(id)?.value || "";
+    }
+
+    function getReportYear(finding) {
+      if (finding.dueDate) return String(new Date(finding.dueDate).getFullYear());
+      if (finding.findingId) {
+        const match = String(finding.findingId).match(/20\d{2}/);
+        if (match) return match[0];
+      }
+      if (finding.createdAt?.toDate) return String(finding.createdAt.toDate().getFullYear());
+      return "";
+    }
+
+    function uniqueSorted(values) {
+      return [...new Set(values)].sort();
+    }
+
+    function setHtml(id, html) {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    }
+
+    function listHtml(items) {
+      if (!items.length) return "<p>No items</p>";
+      return `<ul>${items.map(item => `<li>${item}</li>`).join("")}</ul>`;
+    }
+
+    function countAgingBucket(rows, min, max) {
+      return rows.filter(row => {
+        if (!row.dueDate || row.status === "Closed") return false;
+        const age = Math.floor((new Date() - new Date(row.dueDate)) / (1000 * 60 * 60 * 24));
+        return age >= min && age <= max;
+      }).length;
+    }
+
+    function getTodayStamp() {
+      const d = new Date();
+      return [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, "0"),
+        String(d.getDate()).padStart(2, "0")
+      ].join("");
+    }
+
+    function addPdfLines(doc, lines, startY) {
+      let y = startY;
+      const safeLines = lines.length ? lines : ["No items"];
+
+      safeLines.slice(0, 10).forEach(line => {
+        doc.text(String(line).slice(0, 95), 14, y);
+        y += 6;
+      });
     }
 
 function renderDashboard() {
@@ -1486,6 +1873,11 @@ window.showPage = function(pageId) {
   if (pageId === "pageEvidence") {
     ensureEvidencePageMarkup();
     renderEvidenceCenter();
+  }
+
+  if (pageId === "pageReport") {
+    ensureReportPageMarkup();
+    loadAuditReport();
   }
 
 
