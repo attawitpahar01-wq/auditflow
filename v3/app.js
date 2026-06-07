@@ -1039,12 +1039,20 @@ const owner = getOwnerDisplayName(f);
 if(!owners[owner]){
 owners[owner]={
 total:0,
+open:0,
+overdue:0,
 closed:0
 };
 }
 owners[owner].total++;
 if(f.status==="Closed"){
 owners[owner].closed++;
+}
+else {
+owners[owner].open++;
+}
+if(isOverdue(f.dueDate, f.status)){
+owners[owner].overdue++;
 }
 });
 let html="";
@@ -1058,8 +1066,17 @@ html +=`
 <tr>
 <td>${o}</td>
 <td>${owners[o].total}</td>
+<td>${owners[o].open}</td>
+<td><span class="team-overdue-count">${owners[o].overdue}</span></td>
 <td>${owners[o].closed}</td>
-<td>${pct}%</td>
+<td>
+<div class="team-progress-cell">
+<div class="team-progress-bar">
+<div style="width:${pct}%"></div>
+</div>
+<span>${pct}%</span>
+</div>
+</td>
 </tr>
 `;
 });

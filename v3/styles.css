@@ -1357,6 +1357,46 @@ canvas {
 #pageTeam td {
   border-top: 1px solid #334155;
 }
+
+.team-overdue-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(251, 113, 133, .18);
+  color: #fb7185;
+  font-weight: 800;
+}
+
+.team-progress-cell {
+  display: grid;
+  grid-template-columns: 1fr 48px;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+}
+
+.team-progress-bar {
+  height: 9px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #1e293b;
+}
+
+.team-progress-bar > div {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #38bdf8, #22c55e);
+}
+
+.team-progress-cell span {
+  color: #cbd5e1;
+  font-weight: 700;
+  text-align: right;
+}
 /* =============================
    Team Management Modal
 ============================= */
