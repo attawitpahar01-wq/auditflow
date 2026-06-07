@@ -1033,26 +1033,38 @@ listenAuditTeam();
    Team Management Modal
 ============================== */
 
-const btnManageTeam = document.getElementById("btnManageTeam");
-const teamModal = document.getElementById("teamModal");
-const btnCloseTeamModal = document.getElementById("btnCloseTeamModal");
+window.openTeamModal = function () {
+  const modal = document.getElementById("teamModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+};
 
-if (btnManageTeam) {
-  btnManageTeam.addEventListener("click", () => {
-    teamModal.classList.remove("hidden");
-  });
-}
+window.closeTeamModal = function () {
+  const modal = document.getElementById("teamModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+};
 
-if (btnCloseTeamModal) {
-  btnCloseTeamModal.addEventListener("click", () => {
-    teamModal.classList.add("hidden");
-  });
-}
+setTimeout(() => {
+  const btnManage = document.getElementById("btnManageTeam");
+  const btnClose = document.getElementById("btnCloseTeamModal");
+  const modal = document.getElementById("teamModal");
 
-if (teamModal) {
-  teamModal.addEventListener("click", (event) => {
-    if (event.target === teamModal) {
-      teamModal.classList.add("hidden");
-    }
-  });
-}
+  if (btnManage) {
+    btnManage.onclick = window.openTeamModal;
+  }
+
+  if (btnClose) {
+    btnClose.onclick = window.closeTeamModal;
+  }
+
+  if (modal) {
+    modal.onclick = function (event) {
+      if (event.target === modal) {
+        window.closeTeamModal();
+      }
+    };
+  }
+}, 500);
