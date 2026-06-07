@@ -231,15 +231,26 @@
 
     window.renderTable = function () {
       const tbody = document.getElementById("findingTable");
-      const branch = getValue("filterBranch");
-      const risk = getValue("filterRisk");
-      const status = getValue("filterStatus");
+      if (!tbody) return;
+
+      const branch = normalizeFilterValue(getValue("filterBranch"));
+      const risk = normalizeFilterValue(getValue("filterRisk"));
+      const status = normalizeFilterValue(getValue("filterStatus"));
 
       let filtered = findings.filter(f => {
         return (!branch || f.branch === branch)
           && (!risk || f.riskLevel === risk)
           && (!status || f.status === status);
       });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="11" class="table-empty">No findings found</td>
+          </tr>
+        `;
+        return;
+      }
 
       tbody.innerHTML = filtered.map(f => {
         const aging = calculateAging(f.dueDate, f.status);
@@ -266,6 +277,10 @@
         `;
       }).join("");
     };
+
+    function normalizeFilterValue(value) {
+      return value === "All" ? "" : value;
+    }
 
 function renderDashboard() {
     const data = filteredFindings;

@@ -962,6 +962,13 @@ canvas {
   text-align: center;
 }
 
+.table-empty {
+  padding: 26px 16px;
+  color: #94a3b8;
+  text-align: center;
+  font-weight: 700;
+}
+
 @media (max-width: 1200px) {
   .kanban-board {
     grid-template-columns: repeat(5, minmax(240px, 240px));
