@@ -90,6 +90,18 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
     }
 
     window.saveFinding = async function () {
+    const ownerSelect = document.getElementById("owner");
+    const selectedOwner =
+        ownerSelect && ownerSelect.selectedIndex >= 0
+          ? ownerSelect.options[ownerSelect.selectedIndex]
+          : null;
+    const selectedOwnerId = getValue("owner");
+    const selectedOwnerName =
+    (selectedOwner && selectedOwner.dataset.name) ||
+    selectedOwnerId ||
+    "";
+    const selectedOwnerRole =
+    (selectedOwner && selectedOwner.dataset.role) || "";
       const data = {
         findingId: getValue("findingId") || generateFindingId(),
         branch: getValue("branch"),
@@ -105,7 +117,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
         riskScore:
           Number(getValue("impact")) *
           Number(getValue("likelihood")),
-        owner: getValue("owner"),
+          ownerId: selectedOwnerId,
+          ownerName: selectedOwnerName,
+          ownerRole: selectedOwnerRole,
+          owner: selectedOwnerName,
         dueDate: getValue("dueDate"),
         status: getValue("status"),
         evidenceLink: getValue("evidenceLink"),
@@ -149,7 +164,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
       setValue("riskLevel", f.riskLevel);
       setValue("impact", f.impact);
       setValue("likelihood", f.likelihood);
-      setValue("owner", f.owner);
+      setValue("owner", f.ownerId || f.owner);
       setValue("dueDate", f.dueDate);
       setValue("status", f.status);
       setValue("evidenceLink", f.evidenceLink);
@@ -397,7 +412,8 @@ function renderBarChart(id, data) {
   const result = {};
   getDashboardData().forEach(f => {
     if (f.status !== "Closed") {
-      const key = f.owner || "ไม่ระบุ Owner";
+      const ownerName = f.ownerName || f.owner || "Unassigned";
+      const key = ownerName;
       result[key] = (result[key] || 0) + 1;
     }
   });
@@ -604,7 +620,8 @@ renderTeamTable();
 function renderTeamWorkload(){
 const data = {};
 findings.forEach(f=>{
-const owner = f.owner || "ไม่ระบุ";
+const ownerName = f.ownerName || f.owner || "Unassigned";
+const owner = ownerName;
 data[owner] =
 (data[owner] || 0) + 1;
 });
@@ -627,7 +644,8 @@ document.getElementById("teamWorkload").innerHTML = html;
 function renderTeamTable(){
 const owners = {};
 findings.forEach(f=>{
-const owner = f.owner || "ไม่ระบุ";
+const ownerName = f.ownerName || f.owner || "Unassigned";
+const owner = ownerName;
 if(!owners[owner]){
 owners[owner]={
 total:0,
