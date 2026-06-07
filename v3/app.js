@@ -1191,3 +1191,37 @@ window.deleteAuditor = async function(id) {
   alert("ลบ Auditor เรียบร้อย");
 
 };
+/* ==============================
+   Load Active Auditor to Owner Dropdown
+============================== */
+
+function loadOwnerDropdown() {
+  const ownerSelect = document.getElementById("owner");
+
+  if (!ownerSelect) return;
+
+  onSnapshot(
+    query(collection(db, "audit_team"), orderBy("name")),
+    (snapshot) => {
+      ownerSelect.innerHTML = `
+        <option value="">
+          -- เลือกผู้รับผิดชอบ --
+        </option>
+      `;
+
+      snapshot.forEach((docSnap) => {
+        const t = docSnap.data();
+
+        if (t.status === "Active") {
+          ownerSelect.innerHTML += `
+            <option value="${t.name}">
+              ${t.name} (${t.role})
+            </option>
+          `;
+        }
+      });
+    }
+  );
+}
+
+loadOwnerDropdown();
