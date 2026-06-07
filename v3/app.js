@@ -562,6 +562,7 @@
             <td>${evidence}</td>
             <td>
               <button onclick="editActionPlan('${plan.id}')">Edit</button>
+              ${canDelete() ? `<button class="danger" onclick="deleteActionPlan('${plan.id}')">Delete</button>` : ""}
             </td>
           </tr>
         `;
@@ -607,6 +608,18 @@
 
       closeActionPlanEditor();
       alert("Action Plan updated successfully");
+    };
+
+    window.deleteActionPlan = async function (id) {
+      if (!canDelete()) {
+        alert("Only Supervisor can delete action plans");
+        return;
+      }
+
+      if (!confirm("Delete this Action Plan?")) return;
+
+      await deleteDoc(doc(db, "action_plans", id));
+      alert("Action Plan deleted successfully");
     };
 
     function getCalculatedActionStatus(plan) {
