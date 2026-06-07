@@ -41,6 +41,12 @@
     let filteredFindings = [];
     let actionPlans = [];
     let evidenceRecords = [];
+    let systemUsers = [];
+    let branchMasters = [];
+    let auditMasters = [];
+    let currentSystemUser = null;
+    let currentUserRole = null;
+    let roleLoaded = false;
     let teamMembersById = {};
     let teamMembersByName = {};
     const loginBtn = document.getElementById("loginBtn");
@@ -57,19 +63,27 @@
       await signOut(auth);
     };
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
         userInfo.innerText = `${user.displayName} (${user.email})`;
         loginBtn.classList.add("hidden");
         logoutBtn.classList.remove("hidden");
         appDiv.classList.remove("hidden");
+        await ensureCurrentSystemUser();
         listenFindings();
         listenActionPlans();
         listenEvidence();
+        listenSystemUsers();
+        listenBranchMaster();
+        listenAuditMaster();
+        applyPermissionUI();
         showPage("pageDashboard");
       } else {
         currentUser = null;
+        currentSystemUser = null;
+        currentUserRole = null;
+        roleLoaded = false;
         userInfo.innerText = "ยังไม่ได้เข้าสู่ระบบ";
         loginBtn.classList.remove("hidden");
         logoutBtn.classList.add("hidden");
@@ -232,6 +246,10 @@
     };
 
     window.deleteFinding = async function (id) {
+      if (!canDelete()) {
+        alert("You do not have permission to delete findings");
+        return;
+      }
       if (!confirm("ยืนยันลบ Finding นี้?")) return;
       await deleteDoc(doc(db, "audit_findings", id));
     };
@@ -280,7 +298,7 @@
               <button onclick="editFinding('${f.id}')">แก้ไข</button>
               <button onclick="createActionPlanFromFinding('${f.id}')">Create Action Plan</button>
               <button onclick="createEvidenceRequestFromFinding('${f.id}')">Create Evidence Request</button>
-              <button class="danger" onclick="deleteFinding('${f.id}')">ลบ</button>
+              ${canDelete() ? `<button class="danger" onclick="deleteFinding('${f.id}')">ลบ</button>` : ""}
             </td>
           </tr>
         `;
@@ -1281,6 +1299,581 @@
       });
     }
 
+    async function ensureCurrentSystemUser() {
+      if (!currentUser?.email) return;
+
+      try {
+        const existing = await getDocs(query(
+          collection(db, "system_users"),
+          where("email", "==", currentUser.email)
+        ));
+
+        if (!existing.empty) {
+          const docSnap = existing.docs[0];
+          currentSystemUser = {
+            id: docSnap.id,
+            ...docSnap.data()
+          };
+          currentUserRole = currentSystemUser.systemRole || "Auditor";
+          roleLoaded = true;
+          return;
+        }
+
+        const data = {
+          email: currentUser.email,
+          displayName: currentUser.displayName || currentUser.email,
+          systemRole: "Auditor",
+          active: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          createdBy: currentUser.email
+        };
+
+        const docRef = await addDoc(collection(db, "system_users"), data);
+        currentSystemUser = {
+          id: docRef.id,
+          ...data
+        };
+        currentUserRole = "Auditor";
+        roleLoaded = true;
+      } catch (error) {
+        console.warn("Unable to load system user role. Temporary access allowed.", error);
+        currentSystemUser = null;
+        currentUserRole = null;
+        roleLoaded = false;
+      }
+    }
+
+    function listenSystemUsers() {
+      onSnapshot(query(collection(db, "system_users"), orderBy("email")), (snapshot) => {
+        systemUsers = snapshot.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        }));
+
+        if (currentUser?.email) {
+          const ownUser = systemUsers.find(u => u.email === currentUser.email);
+          if (ownUser) {
+            currentSystemUser = ownUser;
+            currentUserRole = ownUser.systemRole || "Auditor";
+            roleLoaded = true;
+          }
+        }
+
+        applyPermissionUI();
+        renderSettingDashboard();
+        renderTable();
+      });
+    }
+
+    function listenBranchMaster() {
+      onSnapshot(query(collection(db, "branch_master"), orderBy("branchCode")), (snapshot) => {
+        branchMasters = snapshot.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        }));
+
+        seedDefaultBranchesIfEmpty();
+        renderSettingDashboard();
+      });
+    }
+
+    function listenAuditMaster() {
+      onSnapshot(query(collection(db, "audit_master"), orderBy("type")), (snapshot) => {
+        auditMasters = snapshot.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        })).sort((a, b) =>
+          `${a.type || ""}-${a.code || ""}`.localeCompare(`${b.type || ""}-${b.code || ""}`)
+        );
+
+        seedDefaultAuditMastersIfEmpty();
+        renderSettingDashboard();
+      });
+    }
+
+    async function seedDefaultBranchesIfEmpty() {
+      if (branchMasters.length > 0 || window.__branchSeedStarted) return;
+      window.__branchSeedStarted = true;
+
+      const defaults = [
+        ["SPR", "สินแพทย์รามอินทรา"],
+        ["SRR", "สินแพทย์เสรีรักษ์"],
+        ["SPT", "สินแพทย์เทพารักษ์"],
+        ["SPS", "สินแพทย์ศรีนครินทร์"],
+        ["SPL", "สินแพทย์ลำลูกกา"],
+        ["SPK", "สินแพทย์กาญจนบุรี"],
+        ["SPN", "สินแพทย์นครปฐม"]
+      ];
+
+      for (const [branchCode, branchName] of defaults) {
+        await addDoc(collection(db, "branch_master"), {
+          branchCode,
+          branchName,
+          active: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
+
+    async function seedDefaultAuditMastersIfEmpty() {
+      if (auditMasters.length > 0 || window.__auditMasterSeedStarted) return;
+      window.__auditMasterSeedStarted = true;
+
+      const defaults = [
+        ...["Fixed Asset", "ITGC", "Procurement", "Revenue", "Inventory", "Payroll", "PDPA", "Compliance"].map(name => ({
+          type: "auditArea",
+          code: name,
+          name
+        })),
+        ...["High", "Medium", "Low"].map(name => ({
+          type: "riskLevel",
+          code: name,
+          name
+        })),
+        ...["Open", "In Progress", "Follow-up", "Closed"].map(name => ({
+          type: "status",
+          code: name,
+          name
+        }))
+      ];
+
+      for (const item of defaults) {
+        await addDoc(collection(db, "audit_master"), {
+          ...item,
+          active: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
+
+    function getCurrentUserRole() {
+      if (!roleLoaded) {
+        console.warn("User role is not loaded. Temporary access allowed.");
+        return null;
+      }
+
+      return currentUserRole || currentSystemUser?.systemRole || null;
+    }
+
+    function canEdit() {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+      return ["Supervisor", "Senior Auditor", "Auditor"].includes(role);
+    }
+
+    function canDelete() {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+      return role === "Supervisor";
+    }
+
+    function canManageSetting() {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+      return role === "Supervisor";
+    }
+
+    function canViewReport() {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+      return ["Supervisor", "Senior Auditor", "Auditor", "Management Viewer"].includes(role);
+    }
+
+    window.getCurrentUserRole = getCurrentUserRole;
+    window.canEdit = canEdit;
+    window.canDelete = canDelete;
+    window.canManageSetting = canManageSetting;
+    window.canViewReport = canViewReport;
+
+    function canAccessPage(pageId) {
+      const role = getCurrentUserRole();
+      if (!role) return true;
+
+      if (role === "Management Viewer") {
+        return pageId === "pageDashboard" || pageId === "pageReport";
+      }
+
+      return true;
+    }
+
+    function applyPermissionUI() {
+      const role = getCurrentUserRole();
+
+      document.querySelectorAll(".sidebar button").forEach(btn => {
+        btn.style.display = "";
+      });
+
+      const settingBtn = document.querySelector(".sidebar button[onclick*='pageSetting']");
+      if (settingBtn) {
+        settingBtn.style.display = canManageSetting() ? "" : "none";
+      }
+
+      if (role === "Management Viewer") {
+        document.querySelectorAll(".sidebar button").forEach(btn => {
+          const click = btn.getAttribute("onclick") || "";
+          const allowed = click.includes("pageDashboard") || click.includes("pageReport");
+          btn.style.display = allowed ? "" : "none";
+        });
+      }
+    }
+
+    function ensureSettingPageMarkup() {
+      const page = document.getElementById("pageSetting");
+      if (!page || document.getElementById("systemUserTable")) return;
+
+      page.innerHTML = `
+        <div class="card">
+          <h3>System Setting</h3>
+
+          <div class="setting-grid">
+            <section class="setting-panel">
+              <h4>User Role Management</h4>
+              <div class="setting-form-grid">
+                <input type="hidden" id="systemUserEditId">
+                <div>
+                  <label>Email</label>
+                  <input id="systemUserEmail" placeholder="user@example.com">
+                </div>
+                <div>
+                  <label>Display Name</label>
+                  <input id="systemUserDisplayName" placeholder="Display name">
+                </div>
+                <div>
+                  <label>System Role</label>
+                  <select id="systemUserRole">
+                    <option value="Supervisor">Supervisor</option>
+                    <option value="Senior Auditor">Senior Auditor</option>
+                    <option value="Auditor">Auditor</option>
+                    <option value="Management Viewer">Management Viewer</option>
+                  </select>
+                </div>
+                <label class="setting-check">
+                  <input id="systemUserActive" type="checkbox" checked>
+                  Active
+                </label>
+                <button type="button" onclick="saveSystemUser()">Save User</button>
+                <button type="button" class="secondary" onclick="clearSystemUserForm()">Clear</button>
+              </div>
+              <div class="setting-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Name</th>
+                      <th>Role</th>
+                      <th>Active</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="systemUserTable"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="setting-panel">
+              <h4>Branch Master Data</h4>
+              <div class="setting-form-grid">
+                <input type="hidden" id="branchEditId">
+                <div>
+                  <label>Branch Code</label>
+                  <input id="branchCode" placeholder="SPR">
+                </div>
+                <div>
+                  <label>Branch Name</label>
+                  <input id="branchName" placeholder="Branch name">
+                </div>
+                <label class="setting-check">
+                  <input id="branchActive" type="checkbox" checked>
+                  Active
+                </label>
+                <button type="button" onclick="saveBranchMaster()">Save Branch</button>
+                <button type="button" class="secondary" onclick="clearBranchForm()">Clear</button>
+              </div>
+              <div class="setting-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Name</th>
+                      <th>Active</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="branchMasterTable"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="setting-panel setting-panel-wide">
+              <h4>Audit Master Data</h4>
+              <div class="setting-form-grid">
+                <input type="hidden" id="auditMasterEditId">
+                <div>
+                  <label>Type</label>
+                  <select id="auditMasterType">
+                    <option value="auditArea">auditArea</option>
+                    <option value="riskCategory">riskCategory</option>
+                    <option value="status">status</option>
+                    <option value="riskLevel">riskLevel</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Code</label>
+                  <input id="auditMasterCode" placeholder="Code">
+                </div>
+                <div>
+                  <label>Name</label>
+                  <input id="auditMasterName" placeholder="Name">
+                </div>
+                <label class="setting-check">
+                  <input id="auditMasterActive" type="checkbox" checked>
+                  Active
+                </label>
+                <button type="button" onclick="saveAuditMaster()">Save Master</button>
+                <button type="button" class="secondary" onclick="clearAuditMasterForm()">Clear</button>
+              </div>
+              <div class="setting-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Code</th>
+                      <th>Name</th>
+                      <th>Active</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="auditMasterTable"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSettingDashboard() {
+      ensureSettingPageMarkup();
+      renderSystemUsers();
+      renderBranchMasters();
+      renderAuditMasters();
+    }
+
+    function renderSystemUsers() {
+      const tbody = document.getElementById("systemUserTable");
+      if (!tbody) return;
+
+      tbody.innerHTML = systemUsers.map(user => `
+        <tr>
+          <td>${user.email || "-"}</td>
+          <td>${user.displayName || "-"}</td>
+          <td>${user.systemRole || "-"}</td>
+          <td>${user.active ? "Yes" : "No"}</td>
+          <td>
+            <button type="button" onclick="editSystemUser('${user.id}')">Edit</button>
+            ${canDelete() ? `<button type="button" class="danger" onclick="deleteSystemUser('${user.id}')">Delete</button>` : ""}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderBranchMasters() {
+      const tbody = document.getElementById("branchMasterTable");
+      if (!tbody) return;
+
+      tbody.innerHTML = branchMasters.map(branch => `
+        <tr>
+          <td>${branch.branchCode || "-"}</td>
+          <td>${branch.branchName || "-"}</td>
+          <td>${branch.active ? "Yes" : "No"}</td>
+          <td>
+            <button type="button" onclick="editBranchMaster('${branch.id}')">Edit</button>
+            ${canDelete() ? `<button type="button" class="danger" onclick="deleteBranchMaster('${branch.id}')">Delete</button>` : ""}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderAuditMasters() {
+      const tbody = document.getElementById("auditMasterTable");
+      if (!tbody) return;
+
+      tbody.innerHTML = auditMasters.map(item => `
+        <tr>
+          <td>${item.type || "-"}</td>
+          <td>${item.code || "-"}</td>
+          <td>${item.name || "-"}</td>
+          <td>${item.active ? "Yes" : "No"}</td>
+          <td>
+            <button type="button" onclick="editAuditMaster('${item.id}')">Edit</button>
+            ${canDelete() ? `<button type="button" class="danger" onclick="deleteAuditMaster('${item.id}')">Delete</button>` : ""}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    window.saveSystemUser = async function () {
+      if (!canManageSetting()) return alert("Only Supervisor can manage settings");
+
+      const id = getValue("systemUserEditId");
+      const data = {
+        email: getValue("systemUserEmail").trim(),
+        displayName: getValue("systemUserDisplayName").trim(),
+        systemRole: getValue("systemUserRole"),
+        active: document.getElementById("systemUserActive")?.checked || false,
+        updatedAt: serverTimestamp(),
+        createdBy: currentUser?.email || ""
+      };
+
+      if (!data.email) return alert("Please enter email");
+
+      if (id) {
+        await updateDoc(doc(db, "system_users", id), data);
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, "system_users"), data);
+      }
+
+      clearSystemUserForm();
+    };
+
+    window.clearSystemUserForm = function () {
+      setValue("systemUserEditId", "");
+      setValue("systemUserEmail", "");
+      setValue("systemUserDisplayName", "");
+      setValue("systemUserRole", "Auditor");
+      const active = document.getElementById("systemUserActive");
+      if (active) active.checked = true;
+    };
+
+    window.editSystemUser = function (id) {
+      const user = systemUsers.find(u => u.id === id);
+      if (!user) return;
+
+      setValue("systemUserEditId", user.id);
+      setValue("systemUserEmail", user.email);
+      setValue("systemUserDisplayName", user.displayName);
+      setValue("systemUserRole", user.systemRole || "Auditor");
+      const active = document.getElementById("systemUserActive");
+      if (active) active.checked = !!user.active;
+    };
+
+    window.deleteSystemUser = async function (id) {
+      if (!canDelete()) return alert("Only Supervisor can delete settings data");
+      if (!confirm("Delete this user?")) return;
+      await deleteDoc(doc(db, "system_users", id));
+    };
+
+    window.saveBranchMaster = async function () {
+      if (!canManageSetting()) return alert("Only Supervisor can manage settings");
+
+      const id = getValue("branchEditId");
+      const data = {
+        branchCode: getValue("branchCode").trim(),
+        branchName: getValue("branchName").trim(),
+        active: document.getElementById("branchActive")?.checked || false,
+        updatedAt: serverTimestamp()
+      };
+
+      if (!data.branchCode || !data.branchName) return alert("Please enter branch code and name");
+
+      if (id) {
+        await updateDoc(doc(db, "branch_master", id), data);
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, "branch_master"), data);
+      }
+
+      clearBranchForm();
+    };
+
+    window.clearBranchForm = function () {
+      setValue("branchEditId", "");
+      setValue("branchCode", "");
+      setValue("branchName", "");
+      const active = document.getElementById("branchActive");
+      if (active) active.checked = true;
+    };
+
+    window.editBranchMaster = function (id) {
+      const branch = branchMasters.find(b => b.id === id);
+      if (!branch) return;
+
+      setValue("branchEditId", branch.id);
+      setValue("branchCode", branch.branchCode);
+      setValue("branchName", branch.branchName);
+      const active = document.getElementById("branchActive");
+      if (active) active.checked = !!branch.active;
+    };
+
+    window.deleteBranchMaster = async function (id) {
+      if (!canDelete()) return alert("Only Supervisor can delete settings data");
+      if (!confirm("Delete this branch?")) return;
+      await deleteDoc(doc(db, "branch_master", id));
+    };
+
+    window.loadBranchDropdowns = function () {
+      const activeBranches = branchMasters.filter(branch => branch.active);
+      return activeBranches.map(branch => ({
+        code: branch.branchCode,
+        name: branch.branchName
+      }));
+    };
+
+    window.saveAuditMaster = async function () {
+      if (!canManageSetting()) return alert("Only Supervisor can manage settings");
+
+      const id = getValue("auditMasterEditId");
+      const data = {
+        type: getValue("auditMasterType"),
+        code: getValue("auditMasterCode").trim(),
+        name: getValue("auditMasterName").trim(),
+        active: document.getElementById("auditMasterActive")?.checked || false,
+        updatedAt: serverTimestamp()
+      };
+
+      if (!data.type || !data.code || !data.name) return alert("Please enter type, code, and name");
+
+      if (id) {
+        await updateDoc(doc(db, "audit_master", id), data);
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, "audit_master"), data);
+      }
+
+      clearAuditMasterForm();
+    };
+
+    window.clearAuditMasterForm = function () {
+      setValue("auditMasterEditId", "");
+      setValue("auditMasterType", "auditArea");
+      setValue("auditMasterCode", "");
+      setValue("auditMasterName", "");
+      const active = document.getElementById("auditMasterActive");
+      if (active) active.checked = true;
+    };
+
+    window.editAuditMaster = function (id) {
+      const item = auditMasters.find(m => m.id === id);
+      if (!item) return;
+
+      setValue("auditMasterEditId", item.id);
+      setValue("auditMasterType", item.type);
+      setValue("auditMasterCode", item.code);
+      setValue("auditMasterName", item.name);
+      const active = document.getElementById("auditMasterActive");
+      if (active) active.checked = !!item.active;
+    };
+
+    window.deleteAuditMaster = async function (id) {
+      if (!canDelete()) return alert("Only Supervisor can delete settings data");
+      if (!confirm("Delete this master data?")) return;
+      await deleteDoc(doc(db, "audit_master", id));
+    };
+
 function renderDashboard() {
     const data = filteredFindings;
 
@@ -1820,6 +2413,11 @@ function renderKanban() {
 ====================================== */
 window.showPage = function(pageId) {
 
+  if (!canAccessPage(pageId)) {
+    alert("Management Viewer can access Dashboard and Report only");
+    pageId = "pageDashboard";
+  }
+
 
   // ซ่อนทุกหน้า
   document.querySelectorAll(".page-section").forEach(page => {
@@ -1878,6 +2476,16 @@ window.showPage = function(pageId) {
   if (pageId === "pageReport") {
     ensureReportPageMarkup();
     loadAuditReport();
+  }
+
+  if (pageId === "pageSetting") {
+    if (!canManageSetting()) {
+      alert("Only Supervisor can manage system settings");
+      showPage("pageDashboard");
+      return;
+    }
+    ensureSettingPageMarkup();
+    renderSettingDashboard();
   }
 
 
@@ -2162,6 +2770,10 @@ window.editAuditor = function (id, name, role, status) {
 };
 
 window.deleteAuditor = async function (id) {
+  if (!canDelete()) {
+    alert("Only Supervisor can delete team members");
+    return;
+  }
   if (!confirm("ยืนยันการลบ Auditor รายนี้?")) return;
 
   await deleteDoc(doc(db, "audit_team", id));
@@ -2204,9 +2816,9 @@ function listenAuditTeam() {
         Edit
       </button>
 
-      <button type="button" onclick="deleteAuditor('${docSnap.id}')">
+      ${canDelete() ? `<button type="button" onclick="deleteAuditor('${docSnap.id}')">
         Delete
-      </button>
+      </button>` : ""}
     </td>
   </tr>
 `;
@@ -2338,6 +2950,10 @@ window.editTeamMember = function (
 
 window.deleteTeamMember = async function(id) {
 
+  if (!canDelete()) {
+    alert("Only Supervisor can delete team members");
+    return;
+  }
 
   if (!confirm("ต้องการลบ Auditor นี้หรือไม่?")) {
     return;
@@ -2359,6 +2975,10 @@ window.deleteTeamMember = async function(id) {
 
 window.deleteAuditor = async function(id) {
 
+  if (!canDelete()) {
+    alert("Only Supervisor can delete team members");
+    return;
+  }
 
   if (!confirm("ต้องการลบ Auditor นี้หรือไม่?")) {
     return;
