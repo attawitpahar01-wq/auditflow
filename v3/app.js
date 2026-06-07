@@ -1349,6 +1349,7 @@
         };
         currentUserRole = "Auditor";
         roleLoaded = true;
+        await syncSystemUserToAuditTeam(docRef.id, data);
       } catch (error) {
         console.warn("Unable to load system user role. Temporary access allowed.", error);
         currentSystemUser = null;
@@ -1743,15 +1744,75 @@
 
       if (!data.email) return alert("Please enter email");
 
+      let systemUserId = id;
       if (id) {
         await updateDoc(doc(db, "system_users", id), data);
       } else {
         data.createdAt = serverTimestamp();
-        await addDoc(collection(db, "system_users"), data);
+        const docRef = await addDoc(collection(db, "system_users"), data);
+        systemUserId = docRef.id;
       }
 
+      await syncSystemUserToAuditTeam(systemUserId, data);
       clearSystemUserForm();
     };
+
+    async function syncSystemUserToAuditTeam(systemUserId, userData) {
+      if (!systemUserId || !userData) return;
+
+      const email = (userData.email || "").trim();
+      const systemRole = userData.systemRole || "Auditor";
+      const status = userData.active ? "Active" : "Inactive";
+
+      const bySystemUser = await getDocs(query(
+        collection(db, "audit_team"),
+        where("systemUserId", "==", systemUserId)
+      ));
+
+      const byEmail = email
+        ? await getDocs(query(
+            collection(db, "audit_team"),
+            where("email", "==", email)
+          ))
+        : { empty: true, docs: [] };
+
+      const existingDoc = !bySystemUser.empty
+        ? bySystemUser.docs[0]
+        : (!byEmail.empty ? byEmail.docs[0] : null);
+
+      if (systemRole === "Management Viewer") {
+        if (existingDoc) {
+          await updateDoc(doc(db, "audit_team", existingDoc.id), {
+            status: "Inactive",
+            source: "system_users",
+            systemUserId,
+            updatedAt: serverTimestamp()
+          });
+        }
+        return;
+      }
+
+      const auditTeamData = {
+        name: userData.displayName || email,
+        email,
+        role: systemRole,
+        status,
+        source: "system_users",
+        systemUserId,
+        updatedAt: serverTimestamp()
+      };
+
+      if (existingDoc) {
+        await updateDoc(doc(db, "audit_team", existingDoc.id), auditTeamData);
+      } else {
+        await addDoc(collection(db, "audit_team"), {
+          ...auditTeamData,
+          createdAt: serverTimestamp()
+        });
+      }
+    }
+
+    window.syncSystemUserToAuditTeam = syncSystemUserToAuditTeam;
 
     window.clearSystemUserForm = function () {
       setValue("systemUserEditId", "");
@@ -1777,6 +1838,18 @@
     window.deleteSystemUser = async function (id) {
       if (!canDelete()) return alert("Only Supervisor can delete settings data");
       if (!confirm("Delete this user?")) return;
+      const linkedTeam = await getDocs(query(
+        collection(db, "audit_team"),
+        where("systemUserId", "==", id)
+      ));
+
+      for (const teamDoc of linkedTeam.docs) {
+        await updateDoc(doc(db, "audit_team", teamDoc.id), {
+          status: "Inactive",
+          updatedAt: serverTimestamp()
+        });
+      }
+
       await deleteDoc(doc(db, "system_users", id));
     };
 
@@ -2817,14 +2890,16 @@ function listenAuditTeam() {
       body.innerHTML += `
   <tr>
     <td>${t.name || "-"}</td>
+    <td>${t.email || "-"}</td>
     <td>${t.role || "-"}</td>
     <td>${t.status || "-"}</td>
+    <td><span class="source-badge ${t.source === "system_users" ? "system-user" : "manual"}">${t.source === "system_users" ? "System User" : "Manual"}</span></td>
     <td>
       <button type="button" onclick="editAuditor(
-        '${docSnap.id}',
-        '${t.name || ""}',
-        '${t.role || ""}',
-        '${t.status || ""}'
+        ${JSON.stringify(docSnap.id)},
+        ${JSON.stringify(t.name || "")},
+        ${JSON.stringify(t.role || "")},
+        ${JSON.stringify(t.status || "")}
       )">
         Edit
       </button>
