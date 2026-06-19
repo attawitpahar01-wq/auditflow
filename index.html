@@ -29,6 +29,7 @@
       <button class="nav" data-view="kanban">Kanban Board</button>
       <button class="nav" data-view="table">ทะเบียนงาน</button>
       <button class="nav" data-view="evidence">Evidence</button>
+      <button class="nav" data-view="line-coach">LINE Audit Coach</button>
       <div class="sidebar-footer">
         <div class="user-box">
           <div id="current-user-name">-</div>
@@ -192,6 +193,68 @@
           <div id="evidence-list"></div>
         </div>
       </section>
+
+      <section id="view-line-coach" class="view">
+        <div class="line-coach-layout">
+          <div class="panel line-coach-panel">
+            <div class="panel-head-inline">
+              <div>
+                <h2>LINE Audit Coach Registration</h2>
+                <p class="panel-subtitle">ลงทะเบียน LINE userId จริงเพื่อรับ morning/evening summary และอัปเดตงานผ่าน LINE command</p>
+              </div>
+              <span id="liff-status" class="coach-status">Not connected</span>
+            </div>
+
+            <div class="form-grid">
+              <label>Apps Script Web App URL
+                <input id="coach-webapp-url" type="url" placeholder="https://script.google.com/macros/s/..." />
+              </label>
+              <label>LIFF ID
+                <input id="coach-liff-id" placeholder="2000000000-xxxxxxxx" />
+              </label>
+              <label>Role
+                <select id="coach-role">
+                  <option value="auditor">Auditor</option>
+                  <option value="senior">Senior Auditor</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+              <label>Team
+                <input id="coach-team" placeholder="Internal Audit / สาขา / ทีม" />
+              </label>
+            </div>
+
+            <div class="coach-actions">
+              <button type="button" id="btn-save-coach-config" class="btn secondary">บันทึกค่า</button>
+              <button type="button" id="btn-open-line-login" class="btn secondary">เปิด LINE Login</button>
+              <button type="button" id="btn-load-line-profile" class="btn secondary">ดึงข้อมูล LINE</button>
+              <button type="button" id="btn-register-line-coach" class="btn primary">ลงทะเบียน Audit Coach</button>
+              <button type="button" id="btn-sync-coach-tasks" class="btn primary">Sync งานทั้งหมดเข้า Sheet</button>
+            </div>
+
+            <div class="coach-profile">
+              <div><span>LINE userId</span><strong id="coach-user-id">-</strong></div>
+              <div><span>Display name</span><strong id="coach-display-name">-</strong></div>
+            </div>
+          </div>
+
+          <div class="panel line-coach-panel">
+            <h2>Audit Commands</h2>
+            <div class="command-list">
+              <code>done INV-001</code>
+              <code>pending TAX-003</code>
+              <code>note INV-001 เอกสารยังไม่ครบ</code>
+              <code>risk PAY-002 high</code>
+              <code>finding INV-001 พบเอกสาร support ไม่ครบ</code>
+              <code>งานวันนี้</code>
+              <code>งานค้าง</code>
+              <code>สรุป</code>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -243,10 +306,6 @@
     </form>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script type="module" src="app.js"></script>
-
-
   <style>
     .panel-head-inline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.muted{color:#94a3b8}.team-editor-list{display:grid;gap:10px;margin:14px 0}.team-editor-header{display:grid;grid-template-columns:70px 1.3fr 1fr 90px 44px;gap:10px;color:#94a3b8;font-size:12px;font-weight:700}.team-editor-row{display:grid;grid-template-columns:90px 1fr 44px;gap:10px;align-items:center}.team-editor-row input,.team-editor-row select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.28);background:#0f172a;color:#e5e7eb}.team-editor-hint{color:#94a3b8;font-size:12px;margin-top:-4px}.member-progress-item{display:grid;grid-template-columns:44px 1fr 92px;gap:14px;align-items:center;margin:14px 0}.member-avatar{width:38px;height:38px;border:2px solid #8b5cf6;border-radius:999px;display:grid;place-items:center;font-weight:700;background:rgba(139,92,246,.12)}.member-name{font-weight:700}.member-meta{color:#94a3b8;font-size:13px}.member-bar{height:10px;border-radius:999px;background:#273244;overflow:hidden;margin-top:7px}.member-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#8b5cf6,#22c55e);width:0}.member-percent{text-align:right;font-weight:800;color:#22c55e}.btn.small{padding:8px 12px;font-size:13px}.btn.secondary.small{background:#334155;color:#e5e7eb}.team-empty{color:#94a3b8;padding:10px 0}
 
@@ -258,6 +317,7 @@
 
   </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

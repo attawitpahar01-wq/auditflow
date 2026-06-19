@@ -45,6 +45,8 @@ let chartProgress = null;
 let chartRisk = null;
 let chartStatusBranch = null;
 let chartWorkload = null;
+let lineCoachProfile = null;
+let liffInitialized = false;
 
 try {
   firebaseReady = firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("PASTE") && !firebaseConfig.apiKey.includes("...");
@@ -150,6 +152,170 @@ function showToast(message){
   el.textContent = message;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2600);
+}
+
+function setCoachStatus(message, type=""){
+  if (!has("liff-status")) return;
+  $("liff-status").textContent = message;
+  $("liff-status").classList.toggle("ready", type === "ready");
+  $("liff-status").classList.toggle("error", type === "error");
+}
+
+function loadCoachConfig(){
+  if (!has("coach-webapp-url")) return;
+  $("coach-webapp-url").value = localStorage.getItem("auditflow_line_coach_webapp_url") || "";
+  $("coach-liff-id").value = localStorage.getItem("auditflow_line_coach_liff_id") || "";
+  $("coach-role").value = localStorage.getItem("auditflow_line_coach_role") || "auditor";
+  $("coach-team").value = localStorage.getItem("auditflow_line_coach_team") || "";
+}
+
+function saveCoachConfig(){
+  if (!has("coach-webapp-url")) return;
+  localStorage.setItem("auditflow_line_coach_webapp_url", $("coach-webapp-url").value.trim());
+  localStorage.setItem("auditflow_line_coach_liff_id", $("coach-liff-id").value.trim());
+  localStorage.setItem("auditflow_line_coach_role", $("coach-role").value);
+  localStorage.setItem("auditflow_line_coach_team", $("coach-team").value.trim());
+  showToast("บันทึกค่า LINE Audit Coach แล้ว");
+}
+
+async function initLiff(){
+  if (!has("coach-liff-id")) return false;
+  const liffId = $("coach-liff-id").value.trim();
+  if (!liffId) {
+    setCoachStatus("Missing LIFF ID", "error");
+    alert("กรุณาใส่ LIFF ID ก่อน");
+    return false;
+  }
+  if (!window.liff) {
+    setCoachStatus("LIFF SDK missing", "error");
+    alert("ไม่พบ LIFF SDK กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตหรือเปิดผ่านหน้าเว็บที่โหลด LINE SDK ได้");
+    return false;
+  }
+  if (!liffInitialized) {
+    await window.liff.init({ liffId });
+    liffInitialized = true;
+  }
+  setCoachStatus(window.liff.isLoggedIn() ? "Logged in" : "Ready", "ready");
+  return true;
+}
+
+async function openLineLogin(){
+  saveCoachConfig();
+  const ready = await initLiff();
+  if (!ready) return;
+  if (!window.liff.isLoggedIn()) {
+    window.liff.login({ redirectUri: window.location.href });
+    return;
+  }
+  showToast("LINE Login พร้อมใช้งานแล้ว");
+}
+
+async function loadLineProfile(){
+  saveCoachConfig();
+  const ready = await initLiff();
+  if (!ready) return null;
+  if (!window.liff.isLoggedIn()) {
+    window.liff.login({ redirectUri: window.location.href });
+    return null;
+  }
+  lineCoachProfile = await window.liff.getProfile();
+  if (has("coach-user-id")) $("coach-user-id").textContent = lineCoachProfile.userId || "-";
+  if (has("coach-display-name")) $("coach-display-name").textContent = lineCoachProfile.displayName || "-";
+  setCoachStatus("Profile loaded", "ready");
+  showToast("ดึงข้อมูล LINE profile แล้ว");
+  return lineCoachProfile;
+}
+
+async function registerLineCoach(){
+  saveCoachConfig();
+  const webAppUrl = $("coach-webapp-url").value.trim();
+  if (!webAppUrl) {
+    alert("กรุณาใส่ Apps Script Web App URL ก่อน");
+    return;
+  }
+  const profile = lineCoachProfile || await loadLineProfile();
+  if (!profile?.userId) return;
+
+  const payload = {
+    action: "registerUser",
+    userId: profile.userId,
+    displayName: profile.displayName || "",
+    role: $("coach-role").value,
+    team: $("coach-team").value.trim()
+  };
+
+  // Google Apps Script Web App ไม่เหมาะกับ CORS แบบอ่าน response จึงใช้ no-cors สำหรับ MVP registration
+  await fetch(webAppUrl, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  });
+  setCoachStatus("Registration sent", "ready");
+  showToast("ส่งข้อมูลลงทะเบียนไป Apps Script แล้ว");
+}
+
+function coachWebAppUrl(){
+  return has("coach-webapp-url") ? $("coach-webapp-url").value.trim() : localStorage.getItem("auditflow_line_coach_webapp_url") || "";
+}
+
+function taskToCoachPayload(task){
+  return {
+    taskId: task.title?.match(/[A-Z]{2,}-\d{3,}/)?.[0] || task.id,
+    id: task.id,
+    title: task.title,
+    description: task.desc || "",
+    auditArea: task.type || task.branch || "",
+    ownerUserId: "",
+    ownerName: task.ownerName || task.owner || "",
+    team: task.branch || "",
+    priority: task.risk || "Medium",
+    risk: task.risk || "Medium",
+    status: task.status || "planning",
+    dueDate: task.due || "",
+    notes: task.notes || "",
+    createdAt: task.createdAt || task.updatedAtText || "",
+    completedAt: task.completedAt || ""
+  };
+}
+
+async function postCoachAction(payload){
+  const webAppUrl = coachWebAppUrl();
+  if (!webAppUrl) return false;
+  await fetch(webAppUrl, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  });
+  return true;
+}
+
+async function syncTaskToCoach(task, options={}){
+  const sent = await postCoachAction({
+    action: "upsertAuditTask",
+    task: taskToCoachPayload(task)
+  });
+  if (sent && !options.silent) showToast("Sync งานเข้า Google Sheet แล้ว");
+  return sent;
+}
+
+async function syncAllTasksToCoach(){
+  saveCoachConfig();
+  if (!coachWebAppUrl()) {
+    alert("กรุณาใส่ Apps Script Web App URL ก่อน sync งาน");
+    return;
+  }
+  if (!tasks.length) {
+    alert("ยังไม่มีงานให้ sync");
+    return;
+  }
+  await postCoachAction({
+    action: "bulkUpsertAuditTasks",
+    tasks: tasks.map(taskToCoachPayload)
+  });
+  setCoachStatus("Tasks synced", "ready");
+  showToast(`ส่งงาน ${tasks.length} รายการเข้า Google Sheet แล้ว`);
 }
 
 function fillOptions(){
@@ -492,6 +658,10 @@ async function saveTask(e){
       localSave();
       showToast("บันทึกงานใน Demo/localStorage แล้ว");
     }
+    if (coachWebAppUrl()) {
+      await syncTaskToCoach(task, { silent: true });
+      showToast("บันทึกงานแล้ว และ sync เข้า Google Sheet แล้ว");
+    }
     closeModal();
   } catch (error) {
     console.error("Save task error:", error);
@@ -715,11 +885,17 @@ function bind(){
   if (has("btn-add-member")) $("btn-add-member").onclick = addTeamMemberRow;
   if (has("btn-reset-team")) $("btn-reset-team").onclick = resetTeamMembers;
   if (has("team-form")) $("team-form").onsubmit = saveTeamMembers;
+  if (has("btn-save-coach-config")) $("btn-save-coach-config").onclick = saveCoachConfig;
+  if (has("btn-open-line-login")) $("btn-open-line-login").onclick = openLineLogin;
+  if (has("btn-load-line-profile")) $("btn-load-line-profile").onclick = loadLineProfile;
+  if (has("btn-register-line-coach")) $("btn-register-line-coach").onclick = registerLineCoach;
+  if (has("btn-sync-coach-tasks")) $("btn-sync-coach-tasks").onclick = syncAllTasksToCoach;
   window.editTask = id => openModal(tasks.find(t=>t.id===id));
 }
 
 function start(){
   teamMembers = defaultTeamMembers;
+  loadCoachConfig();
   fillOptions();
   bind();
   if (firebaseReady) {
